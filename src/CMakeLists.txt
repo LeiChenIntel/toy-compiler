@@ -1,3 +1,5 @@
+include(HandleLLVMOptions)
+
 add_subdirectory(Toy)
 
 add_llvm_executable(toy_compiler ToyCompiler.cpp AST.cpp)
