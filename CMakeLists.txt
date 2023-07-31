@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 cmake_policy(SET CMP0116 NEW) # Avoid Ninja generators transform DEPFILEs CMake warning
+cmake_policy(SET CMP0077 NEW) # Avoid warning when adds HandleLLVMOptions
 
 project(Toy-Compiler)
 message(STATUS "PROJECT_NAME: " ${PROJECT_NAME})
