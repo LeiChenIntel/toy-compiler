@@ -1,4 +1,9 @@
 set(LLVM_TARGET_DEFINITIONS ToyDialect.td)
 mlir_tablegen(Dialect.h.inc -gen-dialect-decls)
 mlir_tablegen(Dialect.cpp.inc -gen-dialect-defs)
+
+set(LLVM_TARGET_DEFINITIONS ToyOps.td)
+mlir_tablegen(Ops.h.inc -gen-op-decls)
+mlir_tablegen(Ops.cpp.inc -gen-op-defs)
+
 add_public_tablegen_target(ToyTableGen)

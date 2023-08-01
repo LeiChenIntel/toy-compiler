@@ -1,0 +1,85 @@
+#ifndef TOY_OPS_TD
+#define TOY_OPS_TD
+
+include "Toy/ToyDialect.td"
+include "mlir/IR/FunctionInterfaces.td"
+
+class Toy_Op<string mnemonic, list<Trait> traits = []> :
+        Op<Toy_Dialect, mnemonic, traits>;
+
+//
+// ConstantOp
+//
+
+def ConstantOp : Toy_Op<"constant"> {
+  let summary = "constant";
+
+  let description = [{
+      Toy Constant Operation.
+  }];
+
+  let arguments = (ins F64ElementsAttr:$value);
+
+  let results = (outs F64Tensor);
+}
+
+//
+// PrintOp
+//
+
+def PrintOp : Toy_Op<"print"> {
+  let summary = "print";
+
+  let description = [{
+      Toy Print Operation.
+  }];
+
+  let arguments = (ins F64Tensor:$input);
+}
+
+//
+// FuncOp
+//
+
+def FuncOp : Toy_Op<"func", [
+    FunctionOpInterface, IsolatedFromAbove
+    // Declare "IsolatedFromAbove" to create an independent region
+  ]> {
+  let summary = "user defined function";
+
+  let description = [{
+      Toy Function Operation.
+  }];
+
+  let arguments = (ins
+    SymbolNameAttr:$sym_name,
+    TypeAttrOf<FunctionType>:$function_type,
+    OptionalAttr<DictArrayAttr>:$arg_attrs,
+    OptionalAttr<DictArrayAttr>:$res_attrs);
+  let regions = (region AnyRegion:$body);
+
+  // getArgumentTypes and getResultTypes should be defined in FunctionOpInterface
+  let extraClassDeclaration = [{
+    ArrayRef<Type> getArgumentTypes() { return getFunctionType().getInputs(); }
+    ArrayRef<Type> getResultTypes() { return getFunctionType().getResults(); }
+  }];
+}
+
+//
+// ReturnOp
+//
+
+def ReturnOp : Toy_Op<"return", [
+    HasParent<"FuncOp">, Terminator
+    // Declare "Terminator" for the last operation
+  ]> {
+  let summary = "return";
+
+  let description = [{
+      Toy Return Operation.
+  }];
+
+  let arguments = (ins Variadic<F64Tensor>:$input);
+}
+
+#endif // TOY_OPS_TD

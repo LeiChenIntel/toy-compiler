@@ -26,6 +26,7 @@ include(AddMLIR)
 
 include_directories(SYSTEM ${MLIR_INCLUDE_DIRS})
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
+include_directories(${PROJECT_SOURCE_DIR}/include) # Include .td files
 include_directories(${PROJECT_BINARY_DIR}/include) # Include generated files
 
 add_subdirectory(include/Toy)
