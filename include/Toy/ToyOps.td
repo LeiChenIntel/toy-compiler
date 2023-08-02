@@ -58,6 +58,11 @@ def FuncOp : Toy_Op<"func", [
     OptionalAttr<DictArrayAttr>:$res_attrs);
   let regions = (region AnyRegion:$body);
 
+  let builders = [OpBuilder<(ins
+    "StringRef":$name, "FunctionType":$type,
+    CArg<"ArrayRef<NamedAttribute>", "{}">:$attrs)
+  >];
+
   // getArgumentTypes and getResultTypes should be defined in FunctionOpInterface
   let extraClassDeclaration = [{
     ArrayRef<Type> getArgumentTypes() { return getFunctionType().getInputs(); }
