@@ -31,6 +31,7 @@ include_directories(${PROJECT_BINARY_DIR}/include) # Include generated files
 
 add_subdirectory(include/Toy)
 add_subdirectory(src)
+add_subdirectory(test_lit)
 
 add_executable(unit_test mlir_unit_test.cpp)
 target_include_directories(unit_test SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
