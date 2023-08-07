@@ -11,7 +11,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "MLIRGen.h"
+#include "ToyFrontend/MLIRGen.h"
 #include "Toy/Dialect.h"
 
 #include <llvm/ADT/ArrayRef.h>

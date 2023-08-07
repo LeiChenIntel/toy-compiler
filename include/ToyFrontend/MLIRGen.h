@@ -8,7 +8,7 @@
 #ifndef TOY_COMPILER_MLIRGEN_H
 #define TOY_COMPILER_MLIRGEN_H
 
-#include "AST.h"
+#include "ToyFrontend/AST.h"
 #include <mlir/IR/BuiltinOps.h>
 
 namespace toy {

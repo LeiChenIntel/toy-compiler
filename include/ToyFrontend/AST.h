@@ -15,7 +15,7 @@
 #ifndef TOY_AST_H
 #define TOY_AST_H
 
-#include "Lexer.h"
+#include "ToyFrontend/Lexer.h"
 
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/StringRef.h"

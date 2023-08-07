@@ -14,8 +14,8 @@
 #ifndef TOY_PARSER_H
 #define TOY_PARSER_H
 
-#include "AST.h"
-#include "Lexer.h"
+#include "ToyFrontend/AST.h"
+#include "ToyFrontend/Lexer.h"
 
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"

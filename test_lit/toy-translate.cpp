@@ -1,6 +1,6 @@
-#include "MLIRGen.h"
-#include "Parser.h"
 #include "Toy/Dialect.h"
+#include "ToyFrontend/MLIRGen.h"
+#include "ToyFrontend/Parser.h"
 
 #include <mlir/IR/AsmState.h>
 #include <mlir/IR/MLIRContext.h>
