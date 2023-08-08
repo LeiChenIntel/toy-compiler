@@ -20,7 +20,11 @@ def ConstantOp : Toy_Op<"constant"> {
 
   let arguments = (ins F64ElementsAttr:$value);
 
-  let results = (outs F64Tensor);
+  let results = (outs F64Tensor:$result);
+
+  let assemblyFormat = [{
+    attr-dict `:` type($result)
+  }];
 }
 
 //
@@ -35,6 +39,10 @@ def PrintOp : Toy_Op<"print"> {
   }];
 
   let arguments = (ins F64Tensor:$input);
+
+  let assemblyFormat = [{
+    `(` $input `)` attr-dict `:` type($input)
+  }];
 }
 
 //
@@ -68,6 +76,9 @@ def FuncOp : Toy_Op<"func", [
     ArrayRef<Type> getArgumentTypes() { return getFunctionType().getInputs(); }
     ArrayRef<Type> getResultTypes() { return getFunctionType().getResults(); }
   }];
+  // If 'hasCustomAssemblyFormat' is set as ture, need to define print/parse function
+  // in the source file. Or define 'assemblyFormat' to format IR.
+  let hasCustomAssemblyFormat = 1;
 }
 
 //
@@ -85,6 +96,10 @@ def ReturnOp : Toy_Op<"return", [
   }];
 
   let arguments = (ins Variadic<F64Tensor>:$input);
+
+  let assemblyFormat = [{
+    (`(` $input^ `)`)? attr-dict type($input)
+  }];
 }
 
 #endif // TOY_OPS_TD
