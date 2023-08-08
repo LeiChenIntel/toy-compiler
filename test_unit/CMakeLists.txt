@@ -1,0 +1,5 @@
+add_executable(unit-test mlir-unit-test.cpp)
+target_include_directories(unit-test SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
+target_link_libraries(unit-test PUBLIC MLIRIR)
+target_link_libraries(unit-test PUBLIC gtest gtest_main)
+install(TARGETS unit-test RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)

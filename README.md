@@ -76,9 +76,28 @@ cmake --build . --target check-toy-lit
 ```
 
 Then the expected outputs like as
+
 ```bash
 [4/5] Running the toy lit tests
 
 Testing Time: 0.04s
   Passed: 2
+```
+
+#### Unit test
+
+Unit test based on GoogleTest framework is applied in this project. `unit-test` can be run directly, and the output
+likes as
+
+```bash
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from MLIR
+[ RUN      ] MLIR.BuiltinTypes
+[       OK ] MLIR.BuiltinTypes (0 ms)
+[----------] 1 test from MLIR (0 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (0 ms total)
+[  PASSED  ] 1 test.
 ```

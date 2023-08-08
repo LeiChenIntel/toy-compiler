@@ -32,9 +32,4 @@ include_directories(${PROJECT_BINARY_DIR}/include) # Include generated files
 add_subdirectory(include/Toy)
 add_subdirectory(src)
 add_subdirectory(test_lit)
-
-add_executable(unit_test mlir_unit_test.cpp)
-target_include_directories(unit_test SYSTEM PUBLIC ${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
-target_link_libraries(unit_test PUBLIC MLIRIR)
-target_link_libraries(unit_test PUBLIC gtest gtest_main)
-install(TARGETS unit_test RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
+add_subdirectory(test_unit)
