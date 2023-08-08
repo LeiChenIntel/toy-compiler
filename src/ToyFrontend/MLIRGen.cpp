@@ -153,6 +153,15 @@ private:
     return builder.create<ConstantOp>(loc(lit.loc()), type, dataAttribute);
   }
 
+  /// Emit a constant for a single number
+  /// Data is processed in frontend module to avoid additional build definition
+  /// in Toy ConstantOp
+  mlir::Value mlirGen(NumberExprAST &num) {
+    auto dataType = mlir::RankedTensorType::get({}, builder.getF64Type());
+    auto dataAttribute = mlir::DenseElementsAttr::get(dataType, num.getValue());
+    return builder.create<ConstantOp>(loc(num.loc()), dataType, dataAttribute);
+  }
+
   /// Emit a print expression. It emits specific operations for two builtins:
   /// transpose(x) and print(x).
   mlir::LogicalResult mlirGen(PrintExprAST &call) {
