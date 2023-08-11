@@ -28,6 +28,27 @@ def ConstantOp : Toy_Op<"constant"> {
 }
 
 //
+// ReshapeOp
+//
+
+def ReshapeOp : Toy_Op<"reshape"> {
+  let summary = "reshape";
+
+  let description = [{
+      Toy Reshape Operation.
+  }];
+
+  let arguments = (ins F64Tensor:$input);
+
+  // We expect that the reshape operation returns a statically shaped tensor.
+  let results = (outs StaticShapeTensorOf<[F64]>);
+
+  let assemblyFormat = [{
+    `(` operands `)` attr-dict `:` type(operands) `->` type(results)
+  }];
+}
+
+//
 // PrintOp
 //
 

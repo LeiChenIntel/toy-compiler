@@ -227,6 +227,16 @@ private:
     if (!value)
       return nullptr;
 
+    // We have the initializer value, but in case the variable was declared
+    // with specific shape, we emit a "reshape" operation. It will get
+    // optimized out later as needed.
+    // We can handle constant as a special case, but writing code in the way
+    // makes the pipeline more general.
+    if (!vardecl.getType().shape.empty()) {
+      value = builder.create<ReshapeOp>(loc(vardecl.loc()),
+                                        getType(vardecl.getType()), value);
+    }
+
     // Register the value in the symbol table.
     if (failed(declare(vardecl.getName(), value)))
       return nullptr;
