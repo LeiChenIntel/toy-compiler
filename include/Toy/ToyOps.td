@@ -46,6 +46,9 @@ def ReshapeOp : Toy_Op<"reshape"> {
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
   }];
+
+  // Enable this flag to add patterns in getCanonicalizationPatterns
+  let hasCanonicalizer = 1;
 }
 
 //
