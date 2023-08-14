@@ -11,3 +11,15 @@ toy.func @constant_reshape_combine() {
     // CHECK: toy.print([[VAL_0]]) : tensor<2x3xf64>
 	// CHECK: toy.return
 }
+
+// CHECK-LABEL: @scalar_constant_reshape_combine
+toy.func @scalar_constant_reshape_combine() {
+    %0 = toy.constant {value = dense<5.500000e+00> : tensor<f64>} : tensor<f64>
+    %1 = toy.reshape(%0) : tensor<f64> -> tensor<2x2xf64>
+    toy.print(%1) : tensor<2x2xf64>
+    toy.return
+
+    // CHECK: [[VAL_0:%.*]] = toy.constant {value = dense<5.500000e+00> : tensor<2x2xf64>} : tensor<2x2xf64>
+    // CHECK: toy.print([[VAL_0]]) : tensor<2x2xf64>
+    // CHECK: toy.return
+}
