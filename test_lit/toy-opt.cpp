@@ -4,6 +4,8 @@
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
 int main(int argc, char **argv) {
+  mlir::registerCanonicalizerPass();
+
   mlir::DialectRegistry registry;
   registry.insert<mlir::toy::ToyDialect>();
 

@@ -3,6 +3,7 @@
 
 include "Toy/ToyDialect.td"
 include "mlir/IR/FunctionInterfaces.td"
+include "mlir/Interfaces/SideEffectInterfaces.td"
 
 class Toy_Op<string mnemonic, list<Trait> traits = []> :
         Op<Toy_Dialect, mnemonic, traits>;
@@ -11,7 +12,7 @@ class Toy_Op<string mnemonic, list<Trait> traits = []> :
 // ConstantOp
 //
 
-def ConstantOp : Toy_Op<"constant"> {
+def ConstantOp : Toy_Op<"constant", [Pure]> {
   let summary = "constant";
 
   let description = [{
@@ -31,7 +32,7 @@ def ConstantOp : Toy_Op<"constant"> {
 // ReshapeOp
 //
 
-def ReshapeOp : Toy_Op<"reshape"> {
+def ReshapeOp : Toy_Op<"reshape", [Pure]> {
   let summary = "reshape";
 
   let description = [{
@@ -110,7 +111,7 @@ def FuncOp : Toy_Op<"func", [
 //
 
 def ReturnOp : Toy_Op<"return", [
-    HasParent<"FuncOp">, Terminator
+    Pure, HasParent<"FuncOp">, Terminator
     // Declare "Terminator" for the last operation
   ]> {
   let summary = "return";
@@ -122,7 +123,7 @@ def ReturnOp : Toy_Op<"return", [
   let arguments = (ins Variadic<F64Tensor>:$input);
 
   let assemblyFormat = [{
-    (`(` $input^ `)`)? attr-dict type($input)
+    (`(` $input^ `)` type($input))? attr-dict
   }];
 }
 
