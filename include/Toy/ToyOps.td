@@ -53,6 +53,30 @@ def ReshapeOp : Toy_Op<"reshape", [Pure]> {
 }
 
 //
+// AddOp
+//
+
+def AddOp : Toy_Op<"add"> {
+  let summary = "add";
+
+  let description = [{
+      Toy Add Operation.
+  }];
+
+  let arguments = (ins F64Tensor:$lhs, F64Tensor:$rhs);
+  let results = (outs F64Tensor);
+
+  // Allow building an AddOp with only two input operands.
+  let builders = [
+    OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
+  ];
+
+  let assemblyFormat = [{
+    `(` operands `)` attr-dict `:` type(operands) `->` type(results)
+  }];
+}
+
+//
 // PrintOp
 //
 

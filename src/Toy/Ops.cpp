@@ -7,6 +7,19 @@
 
 namespace mlir {
 namespace toy {
+
+//
+// AddOp
+//
+
+void AddOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
+                  mlir::Value lhs, mlir::Value rhs) {
+  auto inputType = lhs.getType().dyn_cast<TensorType>();
+  auto inputEleType = inputType.getElementType();
+  auto dataType = RankedTensorType::get({}, inputEleType);
+  AddOp::build(builder, state, dataType, lhs, rhs);
+}
+
 //
 // FuncOp
 //

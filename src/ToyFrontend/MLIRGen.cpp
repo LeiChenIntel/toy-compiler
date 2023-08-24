@@ -70,13 +70,37 @@ private:
                                      loc.col);
   }
 
-  /// Declare a variable in the current scope, return success if the variable
-  /// wasn't declared yet.
-  mlir::LogicalResult declare(llvm::StringRef var, mlir::Value value) {
-    if (symbolTable.count(var))
-      return mlir::failure();
-    symbolTable.insert(var, value);
-    return mlir::success();
+  /// Emit a binary operation
+  mlir::Value mlirGen(BinaryExprAST &binop) {
+    // First emit the operations for each side of the operation before emitting
+    // the operation itself. For example if the expression is `a + foo(a)`
+    // 1) First it will visiting the LHS, which will return a reference to the
+    //    value holding `a`. This value should have been emitted at declaration
+    //    time and registered in the symbol table, so nothing would be
+    //    codegen'd. If the value is not in the symbol table, an error has been
+    //    emitted and nullptr is returned.
+    // 2) Then the RHS is visited (recursively) and a call to `foo` is emitted
+    //    and the result value is returned. If an error occurs we get a nullptr
+    //    and propagate.
+    //
+
+    mlir::Value lhs = mlirGen(*binop.getLHS());
+    if (!lhs)
+      return nullptr;
+    mlir::Value rhs = mlirGen(*binop.getRHS());
+    if (!rhs)
+      return nullptr;
+    auto location = loc(binop.loc());
+
+    // Derive the operation name from the binary operator. At the moment we only
+    // support '+' and '*'.
+    switch (binop.getOp()) {
+    case '+':
+      return builder.create<AddOp>(location, lhs, rhs);
+    }
+
+    emitError(location, "invalid binary operator '") << binop.getOp() << "'";
+    return nullptr;
   }
 
   /// This is a reference to a variable in an expression. The variable is
@@ -162,6 +186,27 @@ private:
     return builder.create<ConstantOp>(loc(num.loc()), dataType, dataAttribute);
   }
 
+  /// Dispatch codegen for the right expression subclass using RTTI.
+  mlir::Value mlirGen(ExprAST &expr) {
+    switch (expr.getKind()) {
+    case toy::ExprAST::Expr_BinOp:
+      return mlirGen(llvm::cast<BinaryExprAST>(expr));
+    case toy::ExprAST::Expr_Var:
+      return mlirGen(llvm::cast<VariableExprAST>(expr));
+    case toy::ExprAST::Expr_Literal:
+      return mlirGen(llvm::cast<LiteralExprAST>(expr));
+    case toy::ExprAST::Expr_Call:
+      return mlirGen(llvm::cast<CallExprAST>(expr));
+    case toy::ExprAST::Expr_Num:
+      return mlirGen(llvm::cast<NumberExprAST>(expr));
+    default:
+      emitError(loc(expr.loc()))
+          << "MLIR codegen encountered an unhandled expr kind '"
+          << llvm::Twine(expr.getKind()) << "'";
+      return nullptr;
+    }
+  }
+
   /// Emit a print expression. It emits specific operations for two builtins:
   /// transpose(x) and print(x).
   mlir::LogicalResult mlirGen(PrintExprAST &call) {
@@ -190,25 +235,13 @@ private:
     return mlir::success();
   }
 
-  /// Dispatch codegen for the right expression subclass using RTTI.
-  mlir::Value mlirGen(ExprAST &expr) {
-    switch (expr.getKind()) {
-    case toy::ExprAST::Expr_BinOp:
-      return mlirGen(llvm::cast<BinaryExprAST>(expr));
-    case toy::ExprAST::Expr_Var:
-      return mlirGen(llvm::cast<VariableExprAST>(expr));
-    case toy::ExprAST::Expr_Literal:
-      return mlirGen(llvm::cast<LiteralExprAST>(expr));
-    case toy::ExprAST::Expr_Call:
-      return mlirGen(llvm::cast<CallExprAST>(expr));
-    case toy::ExprAST::Expr_Num:
-      return mlirGen(llvm::cast<NumberExprAST>(expr));
-    default:
-      emitError(loc(expr.loc()))
-          << "MLIR codegen encountered an unhandled expr kind '"
-          << llvm::Twine(expr.getKind()) << "'";
-      return nullptr;
-    }
+  /// Declare a variable in the current scope, return success if the variable
+  /// wasn't declared yet.
+  mlir::LogicalResult declare(llvm::StringRef var, mlir::Value value) {
+    if (symbolTable.count(var))
+      return mlir::failure();
+    symbolTable.insert(var, value);
+    return mlir::success();
   }
 
   /// Handle a variable declaration, we'll codegen the expression that forms the
