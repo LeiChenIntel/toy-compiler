@@ -13,6 +13,8 @@ def Toy_Dialect : Dialect {
   let description = [{
       Toy Dialect.
   }];
+
+  let useFoldAPI = kEmitFoldAdaptorFolder;
 }
 
 #endif // TOY_DIALECT_TD

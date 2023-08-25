@@ -32,6 +32,8 @@ git submodule update --init
 
 Build MLIR framework by following [MLIR Getting Started](https://mlir.llvm.org/getting_started/).
 
+The branch `release/16.x` is used. Note that using different branches might cause errors.
+
 For Linux platform, build the project by
 
 ```bash
