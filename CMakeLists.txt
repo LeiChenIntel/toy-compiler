@@ -16,6 +16,10 @@ set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}")
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 add_subdirectory(thirdparty/googletest)
 
+# Need to find Python package to enable LIT on Windows platform
+if(MSVC)
+    find_package(Python3 ${LLVM_MINIMUM_PYTHON_VERSION} REQUIRED COMPONENTS Interpreter)
+endif()
 find_package(MLIR REQUIRED CONFIG)
 list(APPEND CMAKE_MODULE_PATH "${MLIR_CMAKE_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")

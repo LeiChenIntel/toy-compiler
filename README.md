@@ -74,7 +74,7 @@ LIT test is a test framework in MLIR which can help to track the differences of 
 
 ```bash
 cd $TOY_COMPILER_HOME_DIR/build-x86_64
-cmake --build . --target check-toy-lit
+cmake --build . --config Release --target check-toy-lit
 ```
 
 Then the expected outputs like as
