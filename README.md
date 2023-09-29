@@ -34,6 +34,8 @@ Build MLIR framework by following [MLIR Getting Started](https://mlir.llvm.org/g
 
 The branch `release/16.x` is used. Note that using different branches might cause errors.
 
+More details can be found in the [checklist](docs/checklist.md).
+
 For Linux platform, build the project by
 
 ```bash
