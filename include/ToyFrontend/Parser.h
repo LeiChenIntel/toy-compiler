@@ -255,6 +255,9 @@ private:
       // Okay, we know this is a binop.
       int binOp = lexer.getCurToken();
       lexer.consume(Token(binOp));
+      if (binOp == tok_dot_multiplication) {
+        lexer.getNextToken(); // eat operator .*, avoid issues in multiple chars
+      }
       auto loc = lexer.getLastLocation();
 
       // Parse the primary expression after the binary operator.
@@ -452,6 +455,12 @@ private:
 
   /// Get the precedence of the pending binary operator token.
   int getTokPrecedence() {
+    // Handle non-ascii binary operators
+    if (lexer.getCurToken() == tok_dot_multiplication) {
+      return 40;
+    }
+
+    // Handle ascii binary operators
     if (!isascii(lexer.getCurToken()))
       return -1;
 

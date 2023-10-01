@@ -77,6 +77,29 @@ def AddOp : Toy_Op<"add"> {
 }
 
 //
+// MulOp
+//
+
+def MulOp : Toy_Op<"mul"> {
+  let summary = "element-wise multiplication";
+
+  let description = [{
+      Toy Element-wise Multiplication Operation.
+  }];
+
+  let arguments = (ins F64Tensor:$lhs, F64Tensor:$rhs);
+  let results = (outs F64Tensor);
+
+  let builders = [
+    OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
+  ];
+
+  let assemblyFormat = [{
+    `(` operands `)` attr-dict `:` type(operands) `->` type(results)
+  }];
+}
+
+//
 // PrintOp
 //
 

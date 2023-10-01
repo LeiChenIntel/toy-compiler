@@ -47,6 +47,9 @@ enum Token : int {
   // primary
   tok_identifier = -5,
   tok_number = -6,
+
+  // special operation, such as '.*'
+  tok_dot_multiplication = -7,
 };
 
 /// The Lexer is an abstract base class providing all the facilities that the
@@ -147,6 +150,14 @@ private:
       if (identifierStr == "var")
         return tok_var;
       return tok_identifier;
+    }
+
+    // Handle operation with multiple chars: '.*'
+    if (lastChar == '.') {
+      char nextChar = getNextChar();
+      if (nextChar == '*') {
+        return tok_dot_multiplication;
+      }
     }
 
     // Number: [0-9.]+
