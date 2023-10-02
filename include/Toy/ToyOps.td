@@ -3,6 +3,7 @@
 
 include "Toy/ToyDialect.td"
 include "mlir/IR/FunctionInterfaces.td"
+include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
 class Toy_Op<string mnemonic, list<Trait> traits = []> :
@@ -56,7 +57,11 @@ def ReshapeOp : Toy_Op<"reshape", [Pure]> {
 // AddOp
 //
 
-def AddOp : Toy_Op<"add"> {
+def AddOp : Toy_Op<"add", [
+  Pure,
+  InferTypeOpInterface,
+  DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>
+]> {
   let summary = "add";
 
   let description = [{
@@ -64,12 +69,7 @@ def AddOp : Toy_Op<"add"> {
   }];
 
   let arguments = (ins F64Tensor:$lhs, F64Tensor:$rhs);
-  let results = (outs F64Tensor);
-
-  // Allow building an AddOp with only two input operands.
-  let builders = [
-    OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
-  ];
+  let results = (outs F64Tensor:$output);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
@@ -80,7 +80,11 @@ def AddOp : Toy_Op<"add"> {
 // MulOp
 //
 
-def MulOp : Toy_Op<"mul"> {
+def MulOp : Toy_Op<"mul", [
+  Pure,
+  InferTypeOpInterface,
+  DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>
+]> {
   let summary = "element-wise multiplication";
 
   let description = [{
@@ -88,11 +92,7 @@ def MulOp : Toy_Op<"mul"> {
   }];
 
   let arguments = (ins F64Tensor:$lhs, F64Tensor:$rhs);
-  let results = (outs F64Tensor);
-
-  let builders = [
-    OpBuilder<(ins "Value":$lhs, "Value":$rhs)>
-  ];
+  let results = (outs F64Tensor:$output);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)

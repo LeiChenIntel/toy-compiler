@@ -12,24 +12,44 @@ namespace toy {
 // AddOp
 //
 
-void AddOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
-                  mlir::Value lhs, mlir::Value rhs) {
-  auto inputType = lhs.getType().dyn_cast<TensorType>();
-  auto inputEleType = inputType.getElementType();
-  auto dataType = RankedTensorType::get({}, inputEleType);
-  AddOp::build(builder, state, dataType, lhs, rhs);
+mlir::LogicalResult AddOp::inferReturnTypes(
+    ::mlir::MLIRContext *ctx, ::std::optional<::mlir::Location> location,
+    ::mlir::ValueRange operands, ::mlir::DictionaryAttr attrs,
+    ::mlir::RegionRange regions,
+    ::llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
+  const auto loc = location.value_or(mlir::UnknownLoc::get(ctx));
+  AddOpAdaptor add(operands, attrs);
+  if (mlir::failed(add.verify(loc))) {
+    return mlir::failure();
+  }
+
+  const auto inType = add.getLhs().getType().cast<mlir::ShapedType>();
+  const auto outType =
+      mlir::RankedTensorType::get(inType.getShape(), inType.getElementType());
+  inferredReturnTypes.push_back(outType);
+  return mlir::success();
 }
 
 //
 // MulOp
 //
 
-void MulOp::build(mlir::OpBuilder &builder, mlir::OperationState &state,
-                  mlir::Value lhs, mlir::Value rhs) {
-  auto inputType = lhs.getType().dyn_cast<TensorType>();
-  auto inputEleType = inputType.getElementType();
-  auto dataType = RankedTensorType::get({}, inputEleType);
-  MulOp::build(builder, state, dataType, lhs, rhs);
+mlir::LogicalResult MulOp::inferReturnTypes(
+    mlir::MLIRContext *ctx, std::optional<::mlir::Location> location,
+    mlir::ValueRange operands, mlir::DictionaryAttr attrs,
+    mlir::RegionRange regions,
+    llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
+  const auto loc = location.value_or(mlir::UnknownLoc::get(ctx));
+  MulOpAdaptor mul(operands, attrs);
+  if (mlir::failed(mul.verify(loc))) {
+    return mlir::failure();
+  }
+
+  const auto inType = mul.getLhs().getType().cast<mlir::ShapedType>();
+  const auto outType =
+      mlir::RankedTensorType::get(inType.getShape(), inType.getElementType());
+  inferredReturnTypes.push_back(outType);
+  return mlir::success();
 }
 
 //
