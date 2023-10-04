@@ -284,9 +284,14 @@ private:
     auto location = loc(proto.loc());
 
     // This is a generic function, the return type will be inferred later.
-    // Arguments type are uniformly unranked tensors.
-    llvm::SmallVector<mlir::Type, 4> argTypes(proto.getArgs().size(),
-                                              getType(VarType{}));
+    // Check input table. If the variable is found, use the type, or create the
+    // unranked tensor.
+    llvm::SmallVector<mlir::Type, 4> argTypes;
+    for (auto &arg : proto.getArgs()) {
+      const auto argName = arg->getName();
+      auto argType = inputTypeTable.lookup(argName);
+      argTypes.push_back(getType(argType));
+    }
     auto funcType = builder.getFunctionType(argTypes, std::nullopt);
     return builder.create<FuncOp>(location, proto.getName(), funcType);
   }
@@ -324,6 +329,26 @@ private:
     // Create a scope in the symbol table to hold variable declarations.
     llvm::ScopedHashTableScope<llvm::StringRef, mlir::Value> varScope(
         symbolTable);
+
+    // Inputs information of a function is reserved in a function named as
+    // funcInputs. They are prepared for usage in main function.
+    // This function should only include variables.
+    if (funcAST.getProto()->getName().str() == FUNCTION_INPUTS) {
+      ExprASTList &blockAST = *funcAST.getBody();
+      for (auto &expr : blockAST) {
+        if (auto *vardecl = llvm::dyn_cast<VarDeclExprAST>(expr.get())) {
+          const auto varName = vardecl->getName();
+          const auto varType = vardecl->getType();
+          if (inputTypeTable.count(varName)) {
+            emitError(loc(expr->loc()), "error: input variable is redefined");
+          }
+          inputTypeTable[varName] = varType;
+        } else {
+          emitError(loc(expr->loc()), "error: not an input variable");
+        }
+      }
+      return nullptr;
+    }
 
     // Create an MLIR function for the given prototype.
     builder.setInsertionPointToEnd(theModule.getBody());
@@ -376,6 +401,7 @@ private:
   mlir::ModuleOp theModule;
   mlir::OpBuilder builder;
   llvm::ScopedHashTable<llvm::StringRef, mlir::Value> symbolTable;
+  llvm::SmallDenseMap<llvm::StringRef, toy::VarType> inputTypeTable;
 };
 
 } // namespace

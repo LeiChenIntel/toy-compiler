@@ -11,6 +11,9 @@
 #include "ToyFrontend/AST.h"
 #include <mlir/IR/BuiltinOps.h>
 
+#define FUNCTION_INPUTS std::string("funcInputs")
+#define FUNCTION_OUTPUTS std::string("funcOutputs")
+
 namespace toy {
 
 mlir::OwningOpRef<mlir::ModuleOp> mlirGen(mlir::MLIRContext &context,
