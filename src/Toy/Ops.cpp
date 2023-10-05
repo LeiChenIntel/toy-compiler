@@ -23,9 +23,16 @@ mlir::LogicalResult AddOp::inferReturnTypes(
     return mlir::failure();
   }
 
-  const auto inType = add.getLhs().getType().cast<mlir::ShapedType>();
-  const auto outType =
-      mlir::RankedTensorType::get(inType.getShape(), inType.getElementType());
+  const auto inLhsType = add.getLhs().getType().cast<mlir::ShapedType>();
+  const auto inRhsType = add.getRhs().getType().cast<mlir::ShapedType>();
+
+  mlir::Type outType;
+  if (!inLhsType.hasRank() || !inRhsType.hasRank()) {
+    outType = mlir::UnrankedTensorType::get(inLhsType.getElementType());
+  } else {
+    outType = mlir::RankedTensorType::get(inLhsType.getShape(),
+                                          inLhsType.getElementType());
+  }
   inferredReturnTypes.push_back(outType);
   return mlir::success();
 }
@@ -45,9 +52,16 @@ mlir::LogicalResult MulOp::inferReturnTypes(
     return mlir::failure();
   }
 
-  const auto inType = mul.getLhs().getType().cast<mlir::ShapedType>();
-  const auto outType =
-      mlir::RankedTensorType::get(inType.getShape(), inType.getElementType());
+  const auto inLhsType = mul.getLhs().getType().cast<mlir::ShapedType>();
+  const auto inRhsType = mul.getRhs().getType().cast<mlir::ShapedType>();
+
+  mlir::Type outType;
+  if (!inLhsType.hasRank() || !inRhsType.hasRank()) {
+    outType = mlir::UnrankedTensorType::get(inLhsType.getElementType());
+  } else {
+    outType = mlir::RankedTensorType::get(inLhsType.getShape(),
+                                          inLhsType.getElementType());
+  }
   inferredReturnTypes.push_back(outType);
   return mlir::success();
 }

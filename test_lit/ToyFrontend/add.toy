@@ -15,6 +15,16 @@ def add_param_input(a, b) {
   # CHECK-NEXT:  }
 }
 
+def add_param_input_no_shape(a, d) {
+  var c = a + d;
+  print(c);
+  # CHECK-LABEL: toy.func @add_param_input_no_shape(%arg0: tensor<2x3xf64>, %arg1: tensor<*xf64>) {
+  # CHECK-NEXT:    [[VAL_0:%.*]] = toy.add(%arg0, %arg1) : tensor<2x3xf64>, tensor<*xf64> -> tensor<*xf64>
+  # CHECK-NEXT:    toy.print([[VAL_0]]) : tensor<*xf64>
+  # CHECK-NEXT:    toy.return
+  # CHECK-NEXT:  }
+}
+
 def add_const() {
   var a<2, 3> = [1, 2, 3, 4, 5, 6];
   var b<2, 3> = [1, 2, 3, 4, 5, 6];

@@ -15,6 +15,16 @@ def mul_param_input(a, b) {
   # CHECK-NEXT:  }
 }
 
+def mul_param_input_no_shape(d, a) {
+  var c = d .* a;
+  print(c);
+  # CHECK-LABEL: toy.func @mul_param_input_no_shape(%arg0: tensor<*xf64>, %arg1: tensor<2x3xf64>) {
+  # CHECK-NEXT:    [[VAL_0:%.*]] = toy.mul(%arg0, %arg1) : tensor<*xf64>, tensor<2x3xf64> -> tensor<*xf64>
+  # CHECK-NEXT:    toy.print([[VAL_0]]) : tensor<*xf64>
+  # CHECK-NEXT:    toy.return
+  # CHECK-NEXT:  }
+}
+
 def mul_const() {
   var a<2, 3> = [1, 2, 3, 4, 5, 6];
   var b<2, 3> = [1, 2, 3, 4, 5, 6];
