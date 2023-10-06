@@ -43,7 +43,7 @@ def ReshapeOp : Toy_Op<"reshape", [Pure]> {
   let arguments = (ins F64Tensor:$input);
 
   // We expect that the reshape operation returns a statically shaped tensor.
-  let results = (outs StaticShapeTensorOf<[F64]>);
+  let results = (outs StaticShapeTensorOf<[F64]>:$output);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
@@ -51,6 +51,8 @@ def ReshapeOp : Toy_Op<"reshape", [Pure]> {
 
   // Enable this flag to add patterns in getCanonicalizationPatterns
   let hasCanonicalizer = 1;
+  // Enable this flag to check shape, type of an operator
+  let hasVerifier = 1;
 }
 
 //
@@ -74,6 +76,8 @@ def AddOp : Toy_Op<"add", [
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
   }];
+
+  let hasVerifier = 1;
 }
 
 //
@@ -97,6 +101,8 @@ def MulOp : Toy_Op<"mul", [
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
   }];
+
+  let hasVerifier = 1;
 }
 
 //

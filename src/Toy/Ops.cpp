@@ -12,6 +12,25 @@ namespace toy {
 // AddOp
 //
 
+mlir::LogicalResult AddOp::verify() {
+  const auto lhsType = getLhs().getType();
+  const auto rhsType = getRhs().getType();
+  if (lhsType.getElementType() != rhsType.getElementType()) {
+    mlir::emitError(getLoc(), "AddOp: Input element type mismatch");
+    return mlir::failure();
+  }
+
+  if (!lhsType.hasRank() || !rhsType.hasRank()) {
+    return mlir::success();
+  }
+  if (lhsType.getNumElements() != rhsType.getNumElements()) {
+    mlir::emitError(getLoc(), "AddOp: Input element numbers mismatch");
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 mlir::LogicalResult AddOp::inferReturnTypes(
     ::mlir::MLIRContext *ctx, ::std::optional<::mlir::Location> location,
     ::mlir::ValueRange operands, ::mlir::DictionaryAttr attrs,
@@ -41,6 +60,25 @@ mlir::LogicalResult AddOp::inferReturnTypes(
 // MulOp
 //
 
+mlir::LogicalResult MulOp::verify() {
+  const auto lhsType = getLhs().getType();
+  const auto rhsType = getRhs().getType();
+  if (lhsType.getElementType() != rhsType.getElementType()) {
+    mlir::emitError(getLoc(), "MulOp: Input element type mismatch");
+    return mlir::failure();
+  }
+
+  if (!lhsType.hasRank() || !rhsType.hasRank()) {
+    return mlir::success();
+  }
+  if (lhsType.getNumElements() != rhsType.getNumElements()) {
+    mlir::emitError(getLoc(), "MulOp: Input element numbers mismatch");
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 mlir::LogicalResult MulOp::inferReturnTypes(
     mlir::MLIRContext *ctx, std::optional<::mlir::Location> location,
     mlir::ValueRange operands, mlir::DictionaryAttr attrs,
@@ -63,6 +101,33 @@ mlir::LogicalResult MulOp::inferReturnTypes(
                                           inLhsType.getElementType());
   }
   inferredReturnTypes.push_back(outType);
+  return mlir::success();
+}
+
+//
+// ReshapeOp
+//
+
+mlir::LogicalResult ReshapeOp::verify() {
+  const auto inType = getInput().getType();
+  if (!inType.hasRank()) {
+    mlir::emitError(getLoc(), "ReshapeOp: Not support dynamic shape");
+    return mlir::failure();
+  }
+
+  const auto outType = getOutput().getType();
+  if (inType.getElementType() != outType.getElementType()) {
+    mlir::emitError(getLoc(), "ReshapeOp: Input, output type mismatch");
+    return mlir::failure();
+  }
+  if (inType.getNumElements() != outType.getNumElements() &&
+      inType.getNumElements() != 1) {
+    // Only support constant broadcast from 1-dim to multi-dim
+    mlir::emitError(getLoc(),
+                    "ReshapeOp: Input, output element numbers mismatch");
+    return mlir::failure();
+  }
+
   return mlir::success();
 }
 
