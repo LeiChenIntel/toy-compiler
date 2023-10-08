@@ -4,6 +4,8 @@
 
 #include <mlir/IR/AsmState.h>
 #include <mlir/IR/MLIRContext.h>
+#include <mlir/Pass/PassManager.h>
+#include <mlir/Transforms/Passes.h>
 
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Support/CommandLine.h>
@@ -17,6 +19,8 @@ static cl::opt<std::string> inputFilename(cl::Positional,
                                           cl::desc("<input toy file>"),
                                           cl::init("-"),
                                           cl::value_desc("filename"));
+// Canonicalization, CSE are included in this option
+static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
 namespace {
 enum Action { None, DumpAST, DumpMLIR };
 } // namespace
@@ -43,14 +47,29 @@ std::unique_ptr<toy::ModuleAST> parseInputFile(llvm::StringRef filename) {
 int dumpMLIR() {
   mlir::MLIRContext context;
   context.getOrLoadDialect<mlir::toy::ToyDialect>();
+
+  // Convert to AST IR
   auto moduleAST = parseInputFile(inputFilename);
   if (!moduleAST) {
     return 1;
   }
+  // Convert to MLIR format with no optimization
   mlir::OwningOpRef<mlir::ModuleOp> module = mlirGen(context, *moduleAST);
   if (!module) {
     return 1;
   }
+  // Add optimization and lowering pass
+  mlir::PassManager pm(&context);
+  // Apply any generic pass manager command line options and run the pipeline.
+  applyPassManagerCLOptions(pm);
+  if (enableOpt) {
+    mlir::OpPassManager &optPM = pm.nest<mlir::toy::FuncOp>();
+    optPM.addPass(mlir::createCanonicalizerPass());
+    optPM.addPass(mlir::createCSEPass());
+    if (mlir::failed(pm.run(*module)))
+      return 4;
+  }
+
   module->dump();
   return 0;
 }
