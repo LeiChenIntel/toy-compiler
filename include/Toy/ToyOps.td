@@ -77,6 +77,8 @@ def AddOp : Toy_Op<"add", [
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
   }];
 
+  // Set the folder bit so that we can implement constant folders.
+  let hasFolder = 1;
   let hasVerifier = 1;
 }
 
@@ -102,6 +104,7 @@ def MulOp : Toy_Op<"mul", [
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
   }];
 
+  let hasFolder = 1;
   let hasVerifier = 1;
 }
 

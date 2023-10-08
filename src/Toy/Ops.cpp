@@ -12,6 +12,38 @@ namespace toy {
 // AddOp
 //
 
+mlir::OpFoldResult AddOp::fold(FoldAdaptor adaptor) {
+  // Only an existing value or attribute can be returned.
+  // Cannot return created operation. Therefore, lhs operation is reset.
+  const auto lhs = getLhs();
+  const auto rhs = getRhs();
+  if (!lhs.getDefiningOp<toy::ConstantOp>() ||
+      !rhs.getDefiningOp<toy::ConstantOp>()) {
+    return nullptr;
+  }
+
+  ConstantOp lhsOp = lhs.getDefiningOp<toy::ConstantOp>();
+  const auto lhsCstAttr = lhsOp.getValueAttr();
+  const int len = lhsOp.getType().dyn_cast<TensorType>().getNumElements();
+  const auto lhsType = lhsOp.getType();
+  const auto lhsVal = lhsCstAttr.getValues<double>();
+
+  ConstantOp rhsOp = rhs.getDefiningOp<toy::ConstantOp>();
+  const auto rhsCstAttr = rhsOp.getValueAttr();
+  const auto rhsVal = rhsCstAttr.getValues<double>();
+
+  std::vector<double> resVal;
+  for (int i = 0; i < len; i++) {
+    double v = lhsVal[i] + rhsVal[i];
+    resVal.push_back(v);
+  }
+
+  const auto resCstAttr =
+      mlir::DenseElementsAttr::get(lhsType, llvm::ArrayRef(resVal));
+  lhsOp.setValueAttr(resCstAttr);
+  return getLhs();
+}
+
 mlir::LogicalResult AddOp::verify() {
   const auto lhsType = getLhs().getType();
   const auto rhsType = getRhs().getType();
@@ -59,6 +91,36 @@ mlir::LogicalResult AddOp::inferReturnTypes(
 //
 // MulOp
 //
+
+mlir::OpFoldResult MulOp::fold(FoldAdaptor adaptor) {
+  const auto lhs = getLhs();
+  const auto rhs = getRhs();
+  if (!lhs.getDefiningOp<toy::ConstantOp>() ||
+      !rhs.getDefiningOp<toy::ConstantOp>()) {
+    return nullptr;
+  }
+
+  ConstantOp lhsOp = lhs.getDefiningOp<toy::ConstantOp>();
+  const auto lhsCstAttr = lhsOp.getValueAttr();
+  const int len = lhsOp.getType().dyn_cast<TensorType>().getNumElements();
+  const auto lhsType = lhsOp.getType();
+  const auto lhsVal = lhsCstAttr.getValues<double>();
+
+  ConstantOp rhsOp = rhs.getDefiningOp<toy::ConstantOp>();
+  const auto rhsCstAttr = rhsOp.getValueAttr();
+  const auto rhsVal = rhsCstAttr.getValues<double>();
+
+  std::vector<double> resVal;
+  for (int i = 0; i < len; i++) {
+    double v = lhsVal[i] * rhsVal[i];
+    resVal.push_back(v);
+  }
+
+  const auto resCstAttr =
+      mlir::DenseElementsAttr::get(lhsType, llvm::ArrayRef(resVal));
+  lhsOp.setValueAttr(resCstAttr);
+  return getLhs();
+}
 
 mlir::LogicalResult MulOp::verify() {
   const auto lhsType = getLhs().getType();
