@@ -115,8 +115,8 @@ public:
 
                      // Create the binary operation performed on the loaded
                      // values.
-                     return builder.create<toy::AddOp>(loc, loadedLhs,
-                                                       loadedRhs);
+                     return builder.create<arith::AddFOp>(loc, loadedLhs,
+                                                          loadedRhs);
                    });
     return mlir::success();
   }
@@ -131,6 +131,26 @@ class ToyFuncOpPattern : public OpConversionPattern<toy::FuncOp> {
     // Create a new non-toy function, with the same region.
     auto func = rewriter.create<mlir::func::FuncOp>(op.getLoc(), op.getName(),
                                                     op.getFunctionType());
+
+    // Alloc memory for function inputs
+    const auto args = op.getRegion().getArguments();
+    for (auto &a : args) {
+      auto tensorType = a.getType().cast<TensorType>();
+      auto memRefType = convertTensorToMemRef(tensorType);
+      auto alloc = rewriter.create<memref::AllocOp>(op.getLoc(), memRefType);
+
+      // Get the first block and then the first operation in the block. Move
+      // alloc to the front and dealloc to the back.
+      auto &firstBlk = op.getRegion().getBlocks().front();
+      alloc->moveBefore(&firstBlk.front());
+      rewriter.replaceUsesOfBlockArgument(a, alloc);
+
+      auto dealloc = rewriter.create<memref::DeallocOp>(op.getLoc(), alloc);
+      dealloc->moveBefore(&firstBlk.back());
+
+      // TODO: Need to link inputs memory with alloc buffer
+    }
+
     rewriter.inlineRegionBefore(op.getRegion(), func.getBody(), func.end());
     rewriter.eraseOp(op);
     return success();
@@ -167,9 +187,9 @@ class ToyPrintOpPattern : public OpConversionPattern<toy::PrintOp> {
 // Targets and patterns definition and registration
 //
 
-class ConvertToyToMedian : public ConvertToyToMedianBase<ConvertToyToMedian> {
+class ConvertToyToMid : public ConvertToyToMidBase<ConvertToyToMid> {
 public:
-  ConvertToyToMedian() = default;
+  ConvertToyToMid() = default;
 
   void runOnOperation() override {
     // The first thing to define is the conversion target. This will define the
@@ -212,6 +232,6 @@ public:
 } // namespace
 
 std::unique_ptr<OperationPass<ModuleOp>>
-mlir::toy::createConvertToyToMedianPass() {
-  return std::make_unique<::ConvertToyToMedian>();
+mlir::toy::createConvertToyToMidPass() {
+  return std::make_unique<::ConvertToyToMid>();
 }

@@ -119,7 +119,8 @@ def PrintOp : Toy_Op<"print"> {
       Toy Print Operation.
   }];
 
-  let arguments = (ins F64Tensor:$input);
+  // In lowering IR, toy.print has MemRef inputs
+  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$input);
 
   let assemblyFormat = [{
     `(` $input `)` attr-dict `:` type($input)

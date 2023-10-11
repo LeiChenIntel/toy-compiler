@@ -23,15 +23,15 @@ static cl::opt<std::string> inputFilename(cl::Positional,
 // Canonicalization, CSE are included in this option
 static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
 namespace {
-enum Action { None, DumpAST, DumpMLIR, DumpMLIRAffine };
+enum Action { None, DumpAST, DumpMLIR, DumpMLIRMid };
 } // namespace
 
-static cl::opt<enum Action> emitAction(
-    "emit", cl::desc("Select the kind of output desired"),
-    cl::values(clEnumValN(DumpAST, "ast", "output the AST dump")),
-    cl::values(clEnumValN(DumpMLIR, "mlir", "output the MLIR dump")),
-    cl::values(clEnumValN(DumpMLIRAffine, "mlir-affine",
-                          "output the MLIR dump after affine lowering")));
+static cl::opt<enum Action>
+    emitAction("emit", cl::desc("Select the kind of output desired"),
+               cl::values(clEnumValN(DumpAST, "ast", "output the AST dump")),
+               cl::values(clEnumValN(DumpMLIR, "mlir", "output the MLIR dump")),
+               cl::values(clEnumValN(DumpMLIRMid, "mlir-mid",
+                                     "output the MLIR dump after lowering")));
 
 /// Returns a Toy AST resulting from parsing the file or a nullptr on error.
 std::unique_ptr<toy::ModuleAST> parseInputFile(llvm::StringRef filename) {
@@ -67,9 +67,9 @@ int dumpMLIR() {
   applyPassManagerCLOptions(pm);
 
   // Check to see what granularity of MLIR we are compiling to.
-  bool isLoweringToAffine = emitAction >= Action::DumpMLIRAffine;
+  bool isLoweringToMid = emitAction >= Action::DumpMLIRMid;
 
-  if (enableOpt || isLoweringToAffine) {
+  if (enableOpt || isLoweringToMid) {
     mlir::OpPassManager &optPM = pm.nest<mlir::toy::FuncOp>();
     optPM.addPass(mlir::createCanonicalizerPass());
     optPM.addPass(mlir::createCSEPass());
@@ -77,8 +77,8 @@ int dumpMLIR() {
       return 4;
   }
 
-  if (isLoweringToAffine) {
-    pm.addPass(mlir::toy::createConvertToyToMedianPass());
+  if (isLoweringToMid) {
+    pm.addPass(mlir::toy::createConvertToyToMidPass());
   }
 
   module->dump();
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
   case Action::DumpAST:
     return dumpAST();
   case Action::DumpMLIR:
-  case Action::DumpMLIRAffine:
+  case Action::DumpMLIRMid:
     return dumpMLIR();
   default:
     llvm::errs() << "No action specified (parsing only?), use -emit=<action>\n";
