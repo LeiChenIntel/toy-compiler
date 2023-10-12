@@ -9,7 +9,7 @@ reconstruction:
 
 * MLIR/LLVM project is added as a third party package using `find_package` in the CMakeLists. This makes Toy
   Compiler an independent project but not joinly built with MLIR.
-* The project directories is re-designed by taking [Triton](https://github.com/openai/triton) as a reference. This makes
+* The project directories are re-designed by taking [Triton](https://github.com/openai/triton) as a reference. This makes
   the project structure much clearer and easier for further extension.
 * .gitignore and .clang-format are added to make the Toy from the tutorial to a real project.
 
@@ -63,12 +63,34 @@ cmake --build . --target install
 
 #### toy-opt
 
-**toy-opt** is designed to test single pass lit.
+**toy-opt** is designed to test single pass lit. File name for IR and pass name are necessary to run toy-opt.
+
+Here is an example to run ConvertToyToMid pass by toy-opy,
+```bash
+toy-opt.exe const_fold.mlir -convert-toy-to-mid
+```
+
+More usage can be found by running,
+
+```bash
+toy-opt.exe -h
+```
 
 #### toy-translate
 
 **toy-translate** is designed to translate one IR to another IR. Basically, toy-translate is a pass pipeline and may
 include many passes.
+
+Options:
+
+-emit: Choose an IR to be dumped, i.e., ast, mlir, mlir-mid.
+
+-opt: If optimization pass is added, such as canonicalization and common sub-expressions elimination.
+
+Here is an example to dump MidIR by toy-translate,
+```bash
+toy-translate.exe add_mlir.toy -emit=mlir-mid -opt
+```
 
 #### LIT test
 
