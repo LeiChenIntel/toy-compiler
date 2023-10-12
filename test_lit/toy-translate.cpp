@@ -3,6 +3,8 @@
 #include "ToyFrontend/MLIRGen.h"
 #include "ToyFrontend/Parser.h"
 
+#include <mlir/Dialect/Affine/Passes.h>
+#include <mlir/Dialect/Func/IR/FuncOps.h>
 #include <mlir/IR/AsmState.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Pass/PassManager.h>
@@ -73,13 +75,25 @@ int dumpMLIR() {
     mlir::OpPassManager &optPM = pm.nest<mlir::toy::FuncOp>();
     optPM.addPass(mlir::createCanonicalizerPass());
     optPM.addPass(mlir::createCSEPass());
-    if (mlir::failed(pm.run(*module)))
-      return 4;
   }
 
   if (isLoweringToMid) {
     pm.addPass(mlir::toy::createConvertToyToMidPass());
+
+    if (enableOpt) {
+      // Add a few cleanups post lowering.
+      mlir::OpPassManager &optPM = pm.nest<mlir::func::FuncOp>();
+      optPM.addPass(mlir::createCanonicalizerPass());
+      optPM.addPass(mlir::createCSEPass());
+
+      // Add Affine optimizations.
+      optPM.addPass(mlir::createLoopFusionPass());
+      optPM.addPass(mlir::createAffineScalarReplacementPass());
+    }
   }
+
+  if (mlir::failed(pm.run(*module)))
+    return 4;
 
   module->dump();
   return 0;
