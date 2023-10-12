@@ -12,11 +12,13 @@
 int main(int argc, char **argv) {
   mlir::registerCanonicalizerPass();
   mlir::toy::registerConvertToyToMid();
+  mlir::toy::registerConvertMidToLLVM();
 
   mlir::DialectRegistry registry;
   registry.insert<mlir::toy::ToyDialect, mlir::AffineDialect,
                   mlir::arith::ArithDialect, mlir::BuiltinDialect,
-                  mlir::func::FuncDialect, mlir::memref::MemRefDialect>();
+                  mlir::func::FuncDialect, mlir::memref::MemRefDialect,
+                  mlir::scf::SCFDialect, mlir::LLVM::LLVMDialect>();
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "Toy optimizer tool\n", registry));

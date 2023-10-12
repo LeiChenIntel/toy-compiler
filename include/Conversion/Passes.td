@@ -19,4 +19,16 @@ def ConvertToyToMid: Pass<"convert-toy-to-mid", "mlir::ModuleOp"> {
       "mlir::toy::ToyDialect"];
 }
 
+def ConvertMidToLLVM: Pass<"convert-mid-to-llvm", "mlir::ModuleOp"> {
+    let summary = "Convert Mid to LLVM Operations";
+    let description = [{
+
+    }];
+    let constructor = "mlir::toy::createConvertMidToLLVMPass()";
+
+    let dependentDialects = [
+      "mlir::LLVM::LLVMDialect",
+      "mlir::scf::SCFDialect"];
+}
+
 #endif // CONVERSION_PASSES_TD

@@ -25,7 +25,7 @@ static cl::opt<std::string> inputFilename(cl::Positional,
 // Canonicalization, CSE are included in this option
 static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
 namespace {
-enum Action { None, DumpAST, DumpMLIR, DumpMLIRMid };
+enum Action { None, DumpAST, DumpMLIR, DumpMLIRMid, DumpMLIRLLVM };
 } // namespace
 
 static cl::opt<enum Action>
@@ -70,6 +70,7 @@ int dumpMLIR() {
 
   // Check to see what granularity of MLIR we are compiling to.
   bool isLoweringToMid = emitAction >= Action::DumpMLIRMid;
+  bool isLoweringToLLVM = emitAction >= Action::DumpMLIRLLVM;
 
   if (enableOpt || isLoweringToMid) {
     mlir::OpPassManager &optPM = pm.nest<mlir::toy::FuncOp>();
@@ -90,6 +91,10 @@ int dumpMLIR() {
       optPM.addPass(mlir::createLoopFusionPass());
       optPM.addPass(mlir::createAffineScalarReplacementPass());
     }
+  }
+
+  if (isLoweringToLLVM) {
+    pm.addPass(mlir::toy::createConvertMidToLLVMPass());
   }
 
   if (mlir::failed(pm.run(*module)))
