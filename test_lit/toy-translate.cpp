@@ -5,15 +5,20 @@
 
 #include <mlir/Dialect/Affine/Passes.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/ExecutionEngine/ExecutionEngine.h>
+#include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/IR/AsmState.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Pass/PassManager.h>
+#include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
+#include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
 
 #include <llvm/ADT/StringRef.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/ErrorOr.h>
 #include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 
 namespace cl = llvm::cl;
@@ -25,15 +30,18 @@ static cl::opt<std::string> inputFilename(cl::Positional,
 // Canonicalization, CSE are included in this option
 static cl::opt<bool> enableOpt("opt", cl::desc("Enable optimizations"));
 namespace {
-enum Action { None, DumpAST, DumpMLIR, DumpMLIRMid, DumpMLIRLLVM };
+enum Action { None, DumpAST, DumpMLIR, DumpMLIRMid, DumpMLIRLLVM, DumpLLVMIR };
 } // namespace
 
-static cl::opt<enum Action>
-    emitAction("emit", cl::desc("Select the kind of output desired"),
-               cl::values(clEnumValN(DumpAST, "ast", "output the AST dump")),
-               cl::values(clEnumValN(DumpMLIR, "mlir", "output the MLIR dump")),
-               cl::values(clEnumValN(DumpMLIRMid, "mlir-mid",
-                                     "output the MLIR dump after lowering")));
+static cl::opt<enum Action> emitAction(
+    "emit", cl::desc("Select the kind of output desired"),
+    cl::values(clEnumValN(DumpAST, "ast", "output the AST dump")),
+    cl::values(clEnumValN(DumpMLIR, "mlir", "output the MLIR dump")),
+    cl::values(clEnumValN(DumpMLIRMid, "mlir-mid",
+                          "output the MLIR dump after lowering")),
+    cl::values(clEnumValN(DumpMLIRLLVM, "mlir-llvm",
+                          "output the MLIR dump after llvm lowering")),
+    cl::values(clEnumValN(DumpLLVMIR, "llvm", "output the LLVM IR dump")));
 
 /// Returns a Toy AST resulting from parsing the file or a nullptr on error.
 std::unique_ptr<toy::ModuleAST> parseInputFile(llvm::StringRef filename) {
@@ -49,22 +57,20 @@ std::unique_ptr<toy::ModuleAST> parseInputFile(llvm::StringRef filename) {
   return parser.parseModule();
 }
 
-int dumpMLIR() {
-  mlir::MLIRContext context;
-  context.getOrLoadDialect<mlir::toy::ToyDialect>();
-
+int dumpMLIR(mlir::MLIRContext &ctx,
+             mlir::OwningOpRef<mlir::ModuleOp> &module) {
   // Convert to AST IR
   auto moduleAST = parseInputFile(inputFilename);
   if (!moduleAST) {
     return 1;
   }
   // Convert to MLIR format with no optimization
-  mlir::OwningOpRef<mlir::ModuleOp> module = mlirGen(context, *moduleAST);
+  module = mlirGen(ctx, *moduleAST);
   if (!module) {
     return 1;
   }
   // Add optimization and lowering pass
-  mlir::PassManager pm(&context);
+  mlir::PassManager pm(&ctx);
   // Apply any generic pass manager command line options and run the pipeline.
   applyPassManagerCLOptions(pm);
 
@@ -99,8 +105,35 @@ int dumpMLIR() {
 
   if (mlir::failed(pm.run(*module)))
     return 4;
+  return 0;
+}
 
-  module->dump();
+int dumpLLVMIR(mlir::ModuleOp module) {
+  // Register the translation to LLVM IR with the MLIR context.
+  mlir::registerLLVMDialectTranslation(*(module->getContext()));
+
+  // Convert the module to LLVM IR in a new LLVM IR context.
+  llvm::LLVMContext llvmContext;
+  auto llvmModule = mlir::translateModuleToLLVMIR(module, llvmContext);
+  if (!llvmModule) {
+    llvm::errs() << "Failed to emit LLVM IR\n";
+    return -1;
+  }
+
+  // Initialize LLVM targets.
+  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTargetAsmPrinter();
+  mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
+
+  /// Optionally run an optimization pipeline over the llvm module.
+  auto optPipeline = mlir::makeOptimizingTransformer(
+      /*optLevel=*/enableOpt ? 3 : 0, /*sizeLevel=*/0,
+      /*targetMachine=*/nullptr);
+  if (auto err = optPipeline(llvmModule.get())) {
+    llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
+    return -1;
+  }
+  llvm::errs() << *llvmModule << "\n";
   return 0;
 }
 
@@ -120,15 +153,34 @@ int main(int argc, char **argv) {
   mlir::registerPassManagerCLOptions();
   cl::ParseCommandLineOptions(argc, argv, "toy compiler\n");
 
+  mlir::MLIRContext context;
+  context.getOrLoadDialect<mlir::toy::ToyDialect>();
+  mlir::OwningOpRef<mlir::ModuleOp> module;
+
   switch (emitAction) {
   case Action::DumpAST:
     return dumpAST();
   case Action::DumpMLIR:
   case Action::DumpMLIRMid:
-    return dumpMLIR();
+  case Action::DumpMLIRLLVM:
+    dumpMLIR(context, module);
+    break;
+  case Action::DumpLLVMIR:
+    break;
   default:
     llvm::errs() << "No action specified (parsing only?), use -emit=<action>\n";
   }
 
-  return 0;
+  if (emitAction <= Action::DumpMLIRLLVM) {
+    module->dump();
+    return 0;
+  }
+
+  // Check to see if we are compiling to LLVM IR.
+  if (emitAction == Action::DumpLLVMIR) {
+    return dumpLLVMIR(*module);
+  }
+
+  llvm::errs() << "No action specified (parsing only?), use -emit=<action>\n";
+  return -1;
 }
