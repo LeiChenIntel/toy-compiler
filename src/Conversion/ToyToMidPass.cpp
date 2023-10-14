@@ -1,14 +1,6 @@
 #include "Conversion/Passes.h"
 #include "Toy/Dialect.h"
 
-#include <mlir/Dialect/Affine/IR/AffineOps.h>
-#include <mlir/Dialect/Arith/IR/Arith.h>
-#include <mlir/Dialect/Func/IR/FuncOps.h>
-#include <mlir/Dialect/MemRef/IR/MemRef.h>
-#include <mlir/IR/BuiltinDialect.h>
-#include <mlir/Pass/Pass.h>
-#include <mlir/Transforms/DialectConversion.h>
-
 using namespace mlir;
 
 #define GEN_PASS_CLASSES

@@ -1,6 +1,7 @@
 add_mlir_conversion_library(
     ToyConversion
-        Passes.cpp
+        ToyToMidPass.cpp
+        MidToLLVMPass.cpp
     DEPENDS
     ToyOpsIncGen
     ToyConversionPassIncGen)
