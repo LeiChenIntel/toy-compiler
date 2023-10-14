@@ -1,0 +1,7 @@
+# RUN: toy-translate %s -emit=jit -opt 2>&1 | FileCheck %s
+
+def main() {
+  print([[1, 2], [3, 4]]);
+  # CHECK: 1.000000 2.000000
+  # CHECK: 3.000000 4.000000
+}
