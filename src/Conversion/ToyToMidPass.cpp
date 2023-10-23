@@ -188,28 +188,32 @@ class ToyFuncOpPattern : public OpConversionPattern<toy::FuncOp> {
   LogicalResult
   matchAndRewrite(toy::FuncOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
-    // Create a new non-toy function, with the same region.
-    auto func = rewriter.create<mlir::func::FuncOp>(op.getLoc(), op.getName(),
-                                                    op.getFunctionType());
-
-    // Alloc memory for function inputs
+    // Convert arguments type from tensor to memref
     const auto args = op.getRegion().getArguments();
+    llvm::SmallVector<mlir::Type, 4> argTypes;
     for (auto &a : args) {
       auto tensorType = a.getType().cast<TensorType>();
       auto memRefType = convertTensorToMemRef(tensorType);
-      auto alloc = rewriter.create<memref::AllocOp>(op.getLoc(), memRefType);
-
-      // Get the first block and then the first operation in the block. Move
-      // alloc to the front and dealloc to the back.
-      auto &firstBlk = op.getRegion().getBlocks().front();
-      alloc->moveBefore(&firstBlk.front());
-      rewriter.replaceUsesOfBlockArgument(a, alloc);
-
-      auto dealloc = rewriter.create<memref::DeallocOp>(op.getLoc(), alloc);
-      dealloc->moveBefore(&firstBlk.back());
-
-      // TODO: Need to link inputs memory with alloc buffer
+      a.setType(memRefType);
+      argTypes.push_back(memRefType);
     }
+
+    // Convert results type from tensor to memref
+    llvm::SmallVector<mlir::Type, 4> resTypes;
+    for (auto &opi : op.getBody().getOps()) {
+      if (auto retOp = mlir::dyn_cast<toy::ReturnOp>(opi)) {
+        for (auto t : retOp.getInput().getType()) {
+          auto tensorType = t.cast<TensorType>();
+          auto memRefType = convertTensorToMemRef(tensorType);
+          resTypes.push_back(memRefType);
+        }
+      }
+    }
+
+    // Create a new non-toy function, with the same region.
+    auto newFunctionType = rewriter.getFunctionType(argTypes, resTypes);
+    auto func = rewriter.create<mlir::func::FuncOp>(op.getLoc(), op.getName(),
+                                                    newFunctionType);
 
     rewriter.inlineRegionBefore(op.getRegion(), func.getBody(), func.end());
     rewriter.eraseOp(op);
@@ -224,7 +228,9 @@ class ToyReturnOpPattern : public OpConversionPattern<toy::ReturnOp> {
   matchAndRewrite(toy::ReturnOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
     // We lower "toy.return" directly to "func.return".
-    rewriter.replaceOpWithNewOp<func::ReturnOp>(op);
+    // Real time info can be got from adaptor.
+    // op.getInput only gets origin info.
+    rewriter.replaceOpWithNewOp<func::ReturnOp>(op, adaptor.getInput());
     return success();
   }
 };

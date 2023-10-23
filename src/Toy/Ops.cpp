@@ -45,8 +45,9 @@ mlir::OpFoldResult AddOp::fold(FoldAdaptor adaptor) {
 }
 
 mlir::LogicalResult AddOp::verify() {
-  const auto lhsType = getLhs().getType();
-  const auto rhsType = getRhs().getType();
+  const auto lhsType = getLhs().getType().dyn_cast<mlir::ShapedType>();
+  const auto rhsType = getRhs().getType().dyn_cast<mlir::ShapedType>();
+
   if (lhsType.getElementType() != rhsType.getElementType()) {
     mlir::emitError(getLoc(), "AddOp: Input element type mismatch");
     return mlir::failure();
@@ -123,8 +124,9 @@ mlir::OpFoldResult MulOp::fold(FoldAdaptor adaptor) {
 }
 
 mlir::LogicalResult MulOp::verify() {
-  const auto lhsType = getLhs().getType();
-  const auto rhsType = getRhs().getType();
+  const auto lhsType = getLhs().getType().dyn_cast<mlir::ShapedType>();
+  const auto rhsType = getRhs().getType().dyn_cast<mlir::ShapedType>();
+
   if (lhsType.getElementType() != rhsType.getElementType()) {
     mlir::emitError(getLoc(), "MulOp: Input element type mismatch");
     return mlir::failure();

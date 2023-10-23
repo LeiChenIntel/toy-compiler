@@ -8,21 +8,17 @@ def funcInputs() {
 def mul_param_input_mid(a, b) {
   var c = a .* b;
   print(c);
-  # CHECK-LABEL: func.func @mul_param_input_mid(%arg0: tensor<2x3xf64>, %arg1: tensor<2x3xf64>) {
+  # CHECK-LABEL: func.func @mul_param_input_mid(%arg0: memref<2x3xf64>, %arg1: memref<2x3xf64>) {
   # CHECK-NEXT:    %alloc = memref.alloc() : memref<2x3xf64>
-  # CHECK-NEXT:    %alloc_0 = memref.alloc() : memref<2x3xf64>
-  # CHECK-NEXT:    %alloc_1 = memref.alloc() : memref<2x3xf64>
   # CHECK-NEXT:    affine.for %arg2 = 0 to 2 {
   # CHECK-NEXT:      affine.for %arg3 = 0 to 3 {
-  # CHECK-NEXT:        %0 = affine.load %alloc_1[%arg2, %arg3] : memref<2x3xf64>
-  # CHECK-NEXT:        %1 = affine.load %alloc_0[%arg2, %arg3] : memref<2x3xf64>
+  # CHECK-NEXT:        %0 = affine.load %arg0[%arg2, %arg3] : memref<2x3xf64>
+  # CHECK-NEXT:        %1 = affine.load %arg1[%arg2, %arg3] : memref<2x3xf64>
   # CHECK-NEXT:        %2 = arith.mulf %0, %1 : f64
   # CHECK-NEXT:        affine.store %2, %alloc[%arg2, %arg3] : memref<2x3xf64>
   # CHECK-NEXT:      }
   # CHECK-NEXT:    }
   # CHECK-NEXT:    toy.print(%alloc) : memref<2x3xf64>
-  # CHECK-NEXT:    memref.dealloc %alloc_1 : memref<2x3xf64>
-  # CHECK-NEXT:    memref.dealloc %alloc_0 : memref<2x3xf64>
   # CHECK-NEXT:    memref.dealloc %alloc : memref<2x3xf64>
   # CHECK-NEXT:    return
   # CHECK-NEXT:  }

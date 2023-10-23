@@ -70,8 +70,8 @@ def AddOp : Toy_Op<"add", [
       Toy Add Operation.
   }];
 
-  let arguments = (ins F64Tensor:$lhs, F64Tensor:$rhs);
-  let results = (outs F64Tensor:$output);
+  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$lhs, AnyTypeOf<[F64Tensor, F64MemRef]>:$rhs);
+  let results = (outs AnyTypeOf<[F64Tensor, F64MemRef]>:$output);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
@@ -97,8 +97,8 @@ def MulOp : Toy_Op<"mul", [
       Toy Element-wise Multiplication Operation.
   }];
 
-  let arguments = (ins F64Tensor:$lhs, F64Tensor:$rhs);
-  let results = (outs F64Tensor:$output);
+  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$lhs, AnyTypeOf<[F64Tensor, F64MemRef]>:$rhs);
+  let results = (outs AnyTypeOf<[F64Tensor, F64MemRef]>:$output);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
@@ -177,7 +177,7 @@ def ReturnOp : Toy_Op<"return", [
       Toy Return Operation.
   }];
 
-  let arguments = (ins Variadic<F64Tensor>:$input);
+  let arguments = (ins Variadic<AnyTypeOf<[F64Tensor, F64MemRef]>>:$input);
 
   let assemblyFormat = [{
     (`(` $input^ `)` type($input))? attr-dict
