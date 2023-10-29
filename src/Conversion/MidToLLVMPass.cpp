@@ -140,7 +140,11 @@ public:
     // Declare ModuleOp legal operation for FullConversion
     target.addLegalOp<mlir::ModuleOp>();
 
-    LLVMTypeConverter typeConverter(&getContext());
+    LowerToLLVMOptions options(&getContext());
+    // Use pointer-to-structure but not unpacked input arguments
+    options.useBarePtrCallConv = true;
+
+    LLVMTypeConverter typeConverter(&getContext(), options);
 
     RewritePatternSet patterns(&getContext());
     mlir::populateAffineToStdConversionPatterns(patterns);
