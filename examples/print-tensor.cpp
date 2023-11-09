@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
   // issues
   llvm::SmallVector<void *> argsArray;
   argsArray.push_back(&input);
-  llvm::Error error = jit->invokePacked("ciface_print_tensor", argsArray);
+  llvm::Error error = jit->invokePacked("print_tensor", argsArray);
   if (error) {
     llvm::errs() << "Fail to run JIT\n";
   }
