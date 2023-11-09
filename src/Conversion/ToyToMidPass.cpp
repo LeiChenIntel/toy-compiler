@@ -50,6 +50,23 @@ static void lowerOpToLoops(Operation *op, ValueRange operands,
   auto tensorType = (*op->result_type_begin()).cast<TensorType>();
   auto loc = op->getLoc();
 
+  auto r = op->getResult(0);
+  r.dump();
+  auto &b = op->getParentRegion()->front();
+  // b.getOps<toy::StoreOp>();
+  b.dump();
+  auto printOps = b.getOps<toy::PrintOp>();
+  for (auto op : printOps) {
+    op.dump();
+    auto val = op.getInput();
+    val.dump();
+    if (r == val) {
+      llvm::errs() << "find same mlir value\n";
+    } else {
+      llvm::errs() << "not same mlir value\n";
+    }
+  }
+
   // Insert an allocation and deallocation for the result of this operation.
   auto memRefType = convertTensorToMemRef(tensorType);
   auto alloc = insertAllocAndDealloc(memRefType, loc, rewriter);
