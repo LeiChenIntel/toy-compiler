@@ -63,6 +63,7 @@ static void lowerOpToLoops(Operation *op, ValueRange operands,
   // Load and store one by one.
   SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), /*Value=*/0);
   SmallVector<int64_t, 4> steps(tensorType.getRank(), /*Value=*/1);
+  // TODO: if operation output is a pointer. Replace the alloc with the pointer.
   buildAffineLoopNest(
       rewriter, loc, lowerBounds, tensorType.getShape(), steps,
       [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
