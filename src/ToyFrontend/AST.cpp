@@ -59,6 +59,8 @@ private:
 
   void dump(PrintExprAST *node);
 
+  void dump(StoreExprAST *node);
+
   void dump(PrototypeAST *node);
 
   void dump(FunctionAST *node);
@@ -92,8 +94,8 @@ template <typename T> static std::string loc(T *node) {
 void ASTDumper::dump(ExprAST *expr) {
   llvm::TypeSwitch<ExprAST *>(expr)
       .Case<BinaryExprAST, CallExprAST, LiteralExprAST, NumberExprAST,
-            PrintExprAST, ReturnExprAST, VarDeclExprAST, VariableExprAST>(
-          [&](auto *node) { this->dump(node); })
+            PrintExprAST, StoreExprAST, ReturnExprAST, VarDeclExprAST,
+            VariableExprAST>([&](auto *node) { this->dump(node); })
       .Default([&](ExprAST *) {
         // No match, fallback to a generic message
         INDENT();
@@ -201,6 +203,16 @@ void ASTDumper::dump(PrintExprAST *node) {
   INDENT();
   llvm::errs() << "Print [ " << loc(node) << "\n";
   dump(node->getArg());
+  indent();
+  llvm::errs() << "]\n";
+}
+
+/// Print a builtin store call, first the builtin name and then the argument.
+void ASTDumper::dump(StoreExprAST *node) {
+  INDENT();
+  llvm::errs() << "Store [ " << loc(node) << "\n";
+  for (auto &arg : node->getArgs())
+    dump(arg.get());
   indent();
   llvm::errs() << "]\n";
 }

@@ -43,6 +43,7 @@ public:
     Expr_BinOp,
     Expr_Call,
     Expr_Print,
+    Expr_Store,
   };
 
   ExprAST(ExprASTKind kind, Location location)
@@ -201,6 +202,20 @@ public:
 
   /// LLVM style RTTI
   static bool classof(const ExprAST *c) { return c->getKind() == Expr_Print; }
+};
+
+/// Expression class for builtin store calls.
+class StoreExprAST : public ExprAST {
+  std::vector<std::unique_ptr<ExprAST>> args;
+
+public:
+  StoreExprAST(Location loc, std::vector<std::unique_ptr<ExprAST>> args)
+      : ExprAST(Expr_Store, std::move(loc)), args(std::move(args)) {}
+
+  llvm::ArrayRef<std::unique_ptr<ExprAST>> getArgs() { return args; }
+
+  /// LLVM style RTTI
+  static bool classof(const ExprAST *c) { return c->getKind() == Expr_Store; }
 };
 
 /// This class represents the "prototype" for a function, which captures its

@@ -209,6 +209,20 @@ private:
     }
   }
 
+  mlir::LogicalResult mlirGen(StoreExprAST &call) {
+    // Codegen the operands first.
+    llvm::SmallVector<mlir::Value, 4> operands;
+    for (auto &expr : call.getArgs()) {
+      auto arg = mlirGen(*expr);
+      if (!arg)
+        return mlir::failure();
+      operands.push_back(arg);
+    }
+
+    builder.create<StoreOp>(loc(call.loc()), operands[0], operands[1]);
+    return mlir::success();
+  }
+
   /// Emit a print expression. It emits specific operations for two builtins:
   /// transpose(x) and print(x).
   mlir::LogicalResult mlirGen(PrintExprAST &call) {
@@ -313,6 +327,11 @@ private:
         return mlirGen(*ret);
       if (auto *print = llvm::dyn_cast<PrintExprAST>(expr.get())) {
         if (mlir::failed(mlirGen(*print)))
+          return mlir::success();
+        continue;
+      }
+      if (auto *store = llvm::dyn_cast<StoreExprAST>(expr.get())) {
+        if (mlir::failed(mlirGen(*store)))
           return mlir::success();
         continue;
       }
