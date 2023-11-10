@@ -111,21 +111,45 @@ int main(int argc, char **argv) {
   }
 
   std::unique_ptr<mlir::ExecutionEngine> jit = std::move(maybeEngine.get());
-  std::vector<double> inputData = {0, 1, 2};
-  MemRef input;
-  input.allocated = inputData.data();
-  input.aligned = inputData.data();
-  input.size = 3;
-  input.stride = 0;
+  std::vector<double> inputData1 = {0, 1, 2};
+  MemRef input1;
+  input1.allocated = inputData1.data();
+  input1.aligned = inputData1.data();
+  input1.size = 3;
+  input1.stride = 0;
+
+  std::vector<double> inputData2 = {3, 4, 5};
+  MemRef input2;
+  input2.allocated = inputData2.data();
+  input2.aligned = inputData2.data();
+  input2.size = 3;
+  input2.stride = 0;
+
+  MemRef input3;
+  double *p = (double *)malloc(3 * 8);
+  input3.allocated = p;
+  input3.aligned = p;
+  input3.size = 3;
+  input3.stride = 0;
+
   // Function name is changed without emit_c_interface
   // Compiler is trying to add ciface_ before function name why not
   // _mlir_ciface_? Need to invoke ciface+name and use invokePacked to avoid
   // issues
   llvm::SmallVector<void *> argsArray;
-  argsArray.push_back(&input);
+  argsArray.push_back(&input1);
+  argsArray.push_back(&input2);
+  argsArray.push_back(&input3);
+
   llvm::Error error = jit->invokePacked("print_tensor", argsArray);
   if (error) {
     llvm::errs() << "Fail to run JIT\n";
+  }
+
+  double *ptr = p;
+  for (int i = 0; i < 3; i++) {
+    printf("%f ", *ptr);
+    ptr++;
   }
 
   return 0;
