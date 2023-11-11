@@ -1,5 +1,6 @@
 #include "Conversion/Passes.h"
 #include "Toy/Dialect.h"
+#include "ToyFrontend/Container.h"
 #include "ToyFrontend/MLIRGen.h"
 #include "ToyFrontend/Parser.h"
 
@@ -13,20 +14,9 @@
 #include <mlir/Transforms/Passes.h>
 
 #include <llvm/Support/CommandLine.h>
-#include <llvm/Support/ErrorOr.h>
-#include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/TargetSelect.h>
 
-struct MemRef {
-  double *allocated = nullptr;
-  double *aligned = nullptr;
-  intptr_t offset = 0;
-  intptr_t size;
-  intptr_t stride;
-};
-
 namespace cl = llvm::cl;
-
 static cl::opt<std::string> inputFilename(cl::Positional,
                                           cl::desc("<input toy file>"),
                                           cl::init("-"),
@@ -65,15 +55,15 @@ int main(int argc, char **argv) {
   mlir::PassManager pm(&ctx);
   applyPassManagerCLOptions(pm);
 
-  mlir::OpPassManager &optPM = pm.nest<mlir::toy::FuncOp>();
-  optPM.addPass(mlir::createCanonicalizerPass());
-  optPM.addPass(mlir::createCSEPass());
+  mlir::OpPassManager &optPmToy = pm.nest<mlir::toy::FuncOp>();
+  optPmToy.addPass(mlir::createCanonicalizerPass());
+  optPmToy.addPass(mlir::createCSEPass());
   pm.addPass(mlir::toy::createConvertToyToMidPass());
-  mlir::OpPassManager &optPM2 = pm.nest<mlir::func::FuncOp>();
-  optPM2.addPass(mlir::createCanonicalizerPass());
-  optPM2.addPass(mlir::createCSEPass());
-  optPM2.addPass(mlir::createLoopFusionPass());
-  optPM2.addPass(mlir::createAffineScalarReplacementPass());
+  mlir::OpPassManager &optPmFunc = pm.nest<mlir::func::FuncOp>();
+  optPmFunc.addPass(mlir::createCanonicalizerPass());
+  optPmFunc.addPass(mlir::createCSEPass());
+  optPmFunc.addPass(mlir::createLoopFusionPass());
+  optPmFunc.addPass(mlir::createAffineScalarReplacementPass());
   pm.addPass(mlir::toy::createConvertMidToLLVMPass());
   if (mlir::failed(pm.run(*module))) {
     llvm::errs() << "Fail to run lowering pass to LLVM\n";
@@ -100,7 +90,8 @@ int main(int argc, char **argv) {
     llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
     return -1;
   }
-  llvm::errs() << *llvmModule << "\n";
+  // Dump LLVM. Commented as default.
+  // llvm::errs() << *llvmModule << "\n";
 
   // Create and invoke a MLIR execution engine.
   mlir::ExecutionEngineOptions engineOptions;
@@ -108,48 +99,32 @@ int main(int argc, char **argv) {
   auto maybeEngine = mlir::ExecutionEngine::create(*module, engineOptions);
   if (!maybeEngine) {
     llvm::errs() << "Fail to construct an execution engine\n";
+    return -1;
   }
 
   std::unique_ptr<mlir::ExecutionEngine> jit = std::move(maybeEngine.get());
+
   std::vector<double> inputData1 = {0, 1, 2};
-  MemRef input1;
-  input1.allocated = inputData1.data();
-  input1.aligned = inputData1.data();
-  input1.size = 3;
-  input1.stride = 0;
-
+  MemRef input1{inputData1.data(), inputData1.data(), 3, 0};
   std::vector<double> inputData2 = {3, 4, 5};
-  MemRef input2;
-  input2.allocated = inputData2.data();
-  input2.aligned = inputData2.data();
-  input2.size = 3;
-  input2.stride = 0;
+  MemRef input2{inputData2.data(), inputData2.data(), 3, 0};
+  double *p = (double *)malloc(3 * sizeof(double));
+  MemRef output{p, p, 3, 0};
 
-  MemRef input3;
-  double *p = (double *)malloc(3 * 8);
-  input3.allocated = p;
-  input3.aligned = p;
-  input3.size = 3;
-  input3.stride = 0;
-
-  // Function name is changed without emit_c_interface
-  // Compiler is trying to add ciface_ before function name why not
-  // _mlir_ciface_? Need to invoke ciface+name and use invokePacked to avoid
-  // issues
   llvm::SmallVector<void *> argsArray;
   argsArray.push_back(&input1);
   argsArray.push_back(&input2);
-  argsArray.push_back(&input3);
+  argsArray.push_back(&output);
 
-  llvm::Error error = jit->invokePacked("print_tensor", argsArray);
+  llvm::Error error = jit->invokePacked("add_tensors", argsArray);
   if (error) {
     llvm::errs() << "Fail to run JIT\n";
+    return -1;
   }
 
-  double *ptr = p;
+  // Dump output data. Values should be 3, 5, 7.
   for (int i = 0; i < 3; i++) {
-    printf("%f ", *ptr);
-    ptr++;
+    printf("%f ", p[i]);
   }
 
   return 0;
