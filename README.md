@@ -127,3 +127,7 @@ likes as
 [==========] 1 test from 1 test suite ran. (0 ms total)
 [  PASSED  ] 1 test.
 ```
+
+#### Examples
+
+More details can be found on page [examples](docs/examples.md).
