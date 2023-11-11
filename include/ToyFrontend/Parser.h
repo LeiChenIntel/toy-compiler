@@ -207,6 +207,12 @@ private:
       return std::make_unique<PrintExprAST>(std::move(loc), std::move(args[0]));
     }
 
+    if (name == "store") {
+      if (args.size() != 2)
+        return parseError<ExprAST>("<2 args>", "as argument to store()");
+      return std::make_unique<StoreExprAST>(std::move(loc), std::move(args));
+    }
+
     // Call to a user-defined function
     return std::make_unique<CallExprAST>(std::move(loc), name, std::move(args));
   }

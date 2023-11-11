@@ -50,9 +50,33 @@ static void lowerOpToLoops(Operation *op, ValueRange operands,
   auto tensorType = (*op->result_type_begin()).cast<TensorType>();
   auto loc = op->getLoc();
 
-  // Insert an allocation and deallocation for the result of this operation.
-  auto memRefType = convertTensorToMemRef(tensorType);
-  auto alloc = insertAllocAndDealloc(memRefType, loc, rewriter);
+  if (op->getResults().size() != 1) {
+    emitError(loc, "Only support operation with 1 result");
+  }
+
+  const auto opResVal = op->getResult(0);
+  mlir::Value memRef;
+  // Need to check if the result is stored to input pointers.
+  bool isMemAllocated = false;
+
+  // Find if the store operation exists.
+  auto &blk = op->getParentRegion()->front();
+  auto storeOps = blk.getOps<toy::StoreOp>();
+  for (auto op : storeOps) {
+    const auto valToStore = op.getValToStore();
+    if (opResVal == valToStore) {
+      memRef = op.getMemref();
+      isMemAllocated = true;
+      rewriter.eraseOp(op);
+      break;
+    }
+  }
+
+  if (!isMemAllocated) {
+    // Insert an allocation and deallocation for the result of this operation.
+    auto memRefType = convertTensorToMemRef(tensorType);
+    memRef = insertAllocAndDealloc(memRefType, loc, rewriter);
+  }
 
   // Create a nest of affine loops, with one loop per dimension of the shape.
   // The buildAffineLoopNest function takes a callback that is used to construct
@@ -70,11 +94,11 @@ static void lowerOpToLoops(Operation *op, ValueRange operands,
         // and the loop induction variables. This function will return the value
         // to store at the current index.
         Value valueToStore = processIteration(nestedBuilder, operands, ivs);
-        nestedBuilder.create<AffineStoreOp>(loc, valueToStore, alloc, ivs);
+        nestedBuilder.create<AffineStoreOp>(loc, valueToStore, memRef, ivs);
       });
 
   // Replace this operation with the generated alloc.
-  rewriter.replaceOp(op, alloc);
+  rewriter.replaceOp(op, memRef);
 }
 
 //

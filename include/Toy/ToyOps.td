@@ -109,6 +109,24 @@ def MulOp : Toy_Op<"mul", [
 }
 
 //
+// StoreOp
+//
+
+def StoreOp : Toy_Op<"store"> {
+  let summary = "store";
+
+  let description = [{
+      Toy Store Operation.
+  }];
+
+  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$valToStore, AnyTypeOf<[F64Tensor, F64MemRef]>:$memref);
+
+  let assemblyFormat = [{
+    `(` operands `)` attr-dict `:` type(operands)
+  }];
+}
+
+//
 // PrintOp
 //
 
