@@ -1,0 +1,15 @@
+# RUN: toy-translate %s -emit=mlir 2>&1 | FileCheck %s
+
+def funcInputs() {
+  var a<2, 3> = [1, 2, 3, 4, 5, 6];
+  var b<2, 3> = [0, 0, 0, 0, 0, 0];
+}
+
+def store_to_input(a, b) {
+  store(a, b);
+  return;
+  # CHECK-LABEL: toy.func @store_to_input(%arg0: tensor<2x3xf64>, %arg1: tensor<2x3xf64>) {
+  # CHECK-NEXT:    toy.store(%arg0, %arg1) : tensor<2x3xf64>, tensor<2x3xf64>
+  # CHECK-NEXT:    toy.return
+  # CHECK-NEXT:  }
+}
