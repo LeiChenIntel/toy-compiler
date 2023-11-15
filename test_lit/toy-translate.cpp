@@ -198,6 +198,7 @@ int main(int argc, char **argv) {
 
   mlir::MLIRContext context;
   context.getOrLoadDialect<mlir::toy::ToyDialect>();
+  context.loadDialect<mlir::vector::VectorDialect>();
   mlir::OwningOpRef<mlir::ModuleOp> module;
 
   switch (emitAction) {

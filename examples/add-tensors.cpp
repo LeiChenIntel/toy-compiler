@@ -40,6 +40,7 @@ int main(int argc, char **argv) {
 
   mlir::MLIRContext ctx;
   ctx.getOrLoadDialect<mlir::toy::ToyDialect>();
+  ctx.loadDialect<mlir::vector::VectorDialect>();
 
   auto moduleAST = parseInputFile(inputFilename);
   if (!moduleAST) {

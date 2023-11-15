@@ -9,6 +9,7 @@
 #include <mlir/Conversion/LLVMCommon/TypeConverter.h>
 #include <mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h>
 #include <mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h>
+#include <mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h>
 
 using namespace mlir;
 
@@ -154,6 +155,7 @@ public:
     mlir::cf::populateControlFlowToLLVMConversionPatterns(typeConverter,
                                                           patterns);
     mlir::populateFuncToLLVMConversionPatterns(typeConverter, patterns);
+    mlir::populateVectorToLLVMConversionPatterns(typeConverter, patterns);
 
     // The only remaining operation to lower from the `toy` dialect, is the
     // PrintOp.

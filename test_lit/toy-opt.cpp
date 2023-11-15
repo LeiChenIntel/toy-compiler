@@ -18,7 +18,8 @@ int main(int argc, char **argv) {
   registry.insert<mlir::toy::ToyDialect, mlir::AffineDialect,
                   mlir::arith::ArithDialect, mlir::BuiltinDialect,
                   mlir::func::FuncDialect, mlir::memref::MemRefDialect,
-                  mlir::scf::SCFDialect, mlir::LLVM::LLVMDialect>();
+                  mlir::scf::SCFDialect, mlir::LLVM::LLVMDialect,
+                  mlir::vector::VectorDialect>();
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "Toy optimizer tool\n", registry));
