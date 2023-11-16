@@ -33,3 +33,8 @@ add_subdirectory(include/Toy)
 add_subdirectory(src)
 add_subdirectory(test_lit)
 add_subdirectory(test_unit)
+
+message(STATUS "Adding Python module")
+include(MLIRDetectPythonEnv)
+mlir_configure_python_dev_packages()
+add_subdirectory(python)
