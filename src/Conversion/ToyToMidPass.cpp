@@ -111,8 +111,9 @@ public:
   ToyBinaryPattern(MLIRContext *ctx)
       : ConversionPattern(ToyBinaryOp::getOperationName(), 1, ctx) {}
 
-  LogicalResult matchAndRewrite(Operation *op, ArrayRef<Value> operands,
-                                ConversionPatternRewriter &rewriter) const {
+  LogicalResult
+  matchAndRewrite(Operation *op, ArrayRef<Value> operands,
+                  ConversionPatternRewriter &rewriter) const override {
     auto loc = op->getLoc();
     lowerOpToLoops(
         op, operands, rewriter,
