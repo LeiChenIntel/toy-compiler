@@ -63,29 +63,6 @@ static Value createStoreOpMemRef(Operation *op, PatternRewriter &rewriter) {
   return memRef;
 }
 
-static void lowerOpToVectors(Operation *op, ValueRange operands,
-                             PatternRewriter &rewriter) {
-  const auto loc = op->getLoc();
-  mlir::Value memRef = createStoreOpMemRef(op, rewriter);
-
-  const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
-  const auto tensorShape = tensorType.getShape();
-  const auto elementType = tensorType.getElementType();
-  const auto loadedEleType = VectorType::get(tensorShape, elementType);
-  toy::AddOp::Adaptor binaryAdaptor(operands);
-
-  mlir::Value cst = rewriter.create<arith::ConstantOp>(
-      loc, rewriter.getIndexType(), rewriter.getIndexAttr(0));
-  auto loadedVectorLhs =
-      rewriter.create<vector::LoadOp>(loc, loadedEleType, operands[0], cst);
-  auto loadedVectorRhs =
-      rewriter.create<vector::LoadOp>(loc, loadedEleType, operands[1], cst);
-  mlir::Value valueToStore =
-      rewriter.create<arith::AddFOp>(loc, loadedVectorLhs, loadedVectorRhs);
-  rewriter.create<vector::StoreOp>(loc, valueToStore, memRef, cst);
-  rewriter.replaceOp(op, memRef);
-}
-
 /// This defines the function type used to process an iteration of a lowered
 /// loop. It takes as input an OpBuilder, an range of memRefOperands
 /// corresponding to the operands of the input operation, and the range of loop
@@ -138,16 +115,34 @@ static void lowerOpToLoops(Operation *op, ValueRange operands,
 template <typename ToyBinaryOp, typename LoweredBinaryOp>
 class ToyBinaryPattern : public ConversionPattern {
 public:
-  ToyBinaryPattern(MLIRContext *ctx)
-      : ConversionPattern(ToyBinaryOp::getOperationName(), 1, ctx) {}
+  ToyBinaryPattern(MLIRContext *ctx, toy::LoweringPatternMode mode)
+      : ConversionPattern(ToyBinaryOp::getOperationName(), 1, ctx), mode(mode) {
+  }
 
   LogicalResult
   matchAndRewrite(Operation *op, ArrayRef<Value> operands,
                   ConversionPatternRewriter &rewriter) const override {
     auto loc = op->getLoc();
-    if (true) {
-      lowerOpToVectors(op, operands, rewriter);
-    } else {
+    if (mode == toy::LoweringPatternMode::Vector) {
+      mlir::Value memRef = createStoreOpMemRef(op, rewriter);
+
+      const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+      const auto tensorShape = tensorType.getShape();
+      const auto elementType = tensorType.getElementType();
+      const auto loadedEleType = VectorType::get(tensorShape, elementType);
+      toy::AddOp::Adaptor binaryAdaptor(operands);
+
+      mlir::Value cst = rewriter.create<arith::ConstantOp>(
+          loc, rewriter.getIndexType(), rewriter.getIndexAttr(0));
+      auto loadedVectorLhs =
+          rewriter.create<vector::LoadOp>(loc, loadedEleType, operands[0], cst);
+      auto loadedVectorRhs =
+          rewriter.create<vector::LoadOp>(loc, loadedEleType, operands[1], cst);
+      mlir::Value valueToStore =
+          rewriter.create<LoweredBinaryOp>(loc, loadedVectorLhs, loadedVectorRhs);
+      rewriter.create<vector::StoreOp>(loc, valueToStore, memRef, cst);
+      rewriter.replaceOp(op, memRef);
+    } else if (mode == toy::LoweringPatternMode::Loop) {
       lowerOpToLoops(
           op, operands, rewriter,
           [loc](OpBuilder &builder, ValueRange memRefOperands,
@@ -168,9 +163,15 @@ public:
             // values.
             return builder.create<LoweredBinaryOp>(loc, loadedLhs, loadedRhs);
           });
+    } else {
+      emitError(loc, "Unsupported lowering binary pattern");
+      return mlir::failure();
     }
     return mlir::success();
   }
+
+private:
+  enum toy::LoweringPatternMode mode;
 };
 using ToyAddPattern = ToyBinaryPattern<toy::AddOp, arith::AddFOp>;
 using ToyMulPattern = ToyBinaryPattern<toy::MulOp, arith::MulFOp>;
@@ -344,8 +345,20 @@ public:
     // the set of patterns that will lower the Toy operations.
     RewritePatternSet patterns(&getContext());
     patterns.add<ToyFuncOpPattern, ToyReturnOpPattern, ToyPrintOpPattern,
-                 ToyAddPattern, ToyMulPattern, ToyConstantOpPattern>(
-        &getContext());
+                 ToyConstantOpPattern>(&getContext());
+    switch (loweringPatternMode) {
+    case toy::LoweringPatternMode::Loop:
+      patterns.add<ToyAddPattern, ToyMulPattern>(
+          &getContext(), toy::LoweringPatternMode::Loop);
+      break;
+    case toy::LoweringPatternMode::Vector:
+      patterns.add<ToyAddPattern, ToyMulPattern>(
+          &getContext(), toy::LoweringPatternMode::Vector);
+      break;
+    default:
+      llvm::errs() << "Unsupported lowering binary pattern\n";
+      signalPassFailure();
+    }
 
     // With the target and rewrite patterns defined, we can now attempt the
     // conversion. The conversion will signal failure if any of our `illegal`
@@ -360,5 +373,5 @@ public:
 
 std::unique_ptr<OperationPass<ModuleOp>>
 mlir::toy::createConvertToyToMidPass() {
-  return std::make_unique<::ConvertToyToMid>();
+  return std::make_unique<ConvertToyToMid>();
 }
