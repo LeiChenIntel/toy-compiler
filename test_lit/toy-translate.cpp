@@ -54,6 +54,11 @@ static cl::opt<enum Action> emitAction(
         clEnumValN(RunJIT, "jit",
                    "JIT the code and run it by invoking the main function")));
 
+static cl::opt<enum mlir::toy::LoweringPatternMode> binOpeLoweringMode(
+    "lower-pat", cl::desc("Select the kind of lower pattern"),
+    cl::values(clEnumValN(mlir::toy::Loop, "loop", "use affine loop pattern")),
+    cl::values(clEnumValN(mlir::toy::Vector, "vector", "use vector pattern")));
+
 /// Returns a Toy AST resulting from parsing the file or a nullptr on error.
 std::unique_ptr<toy::ModuleAST> parseInputFile(llvm::StringRef filename) {
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
@@ -96,7 +101,8 @@ int dumpMLIR(mlir::MLIRContext &ctx,
   }
 
   if (isLoweringToMid) {
-    pm.addPass(mlir::toy::createConvertToyToMidPass());
+    pm.addPass(
+        mlir::toy::createConvertToyToMidPass(binOpeLoweringMode.getValue()));
 
     if (enableOpt) {
       // Add a few cleanups post lowering.

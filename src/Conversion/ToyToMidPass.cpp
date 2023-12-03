@@ -317,6 +317,9 @@ class ToyPrintOpPattern : public OpConversionPattern<toy::PrintOp> {
 class ConvertToyToMid : public ConvertToyToMidBase<ConvertToyToMid> {
 public:
   ConvertToyToMid() = default;
+  ConvertToyToMid(mlir::toy::LoweringPatternMode mode) {
+    loweringPatternMode = mode;
+  };
 
   void runOnOperation() override {
     // The first thing to define is the conversion target. This will define the
@@ -375,4 +378,9 @@ public:
 std::unique_ptr<OperationPass<ModuleOp>>
 mlir::toy::createConvertToyToMidPass() {
   return std::make_unique<ConvertToyToMid>();
+}
+
+std::unique_ptr<OperationPass<ModuleOp>>
+mlir::toy::createConvertToyToMidPass(mlir::toy::LoweringPatternMode mode) {
+  return std::make_unique<ConvertToyToMid>(mode);
 }
