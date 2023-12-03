@@ -130,17 +130,18 @@ public:
       const auto tensorShape = tensorType.getShape();
       const auto elementType = tensorType.getElementType();
       const auto loadedEleType = VectorType::get(tensorShape, elementType);
-      toy::AddOp::Adaptor binaryAdaptor(operands);
+      typename ToyBinaryOp::Adaptor binaryAdaptor(operands);
 
       mlir::Value cst = rewriter.create<arith::ConstantOp>(
           loc, rewriter.getIndexType(), rewriter.getIndexAttr(0));
-      auto loadedVectorLhs =
-          rewriter.create<vector::LoadOp>(loc, loadedEleType, operands[0], cst);
-      auto loadedVectorRhs =
-          rewriter.create<vector::LoadOp>(loc, loadedEleType, operands[1], cst);
-      mlir::Value valueToStore =
-          rewriter.create<LoweredBinaryOp>(loc, loadedVectorLhs, loadedVectorRhs);
-      rewriter.create<vector::StoreOp>(loc, valueToStore, memRef, cst);
+      SmallVector<mlir::Value, 4> memRefIdx(tensorShape.size(), cst);
+      auto loadedVectorLhs = rewriter.create<vector::LoadOp>(
+          loc, loadedEleType, binaryAdaptor.getLhs(), memRefIdx);
+      auto loadedVectorRhs = rewriter.create<vector::LoadOp>(
+          loc, loadedEleType, binaryAdaptor.getRhs(), memRefIdx);
+      mlir::Value valueToStore = rewriter.create<LoweredBinaryOp>(
+          loc, loadedVectorLhs, loadedVectorRhs);
+      rewriter.create<vector::StoreOp>(loc, valueToStore, memRef, memRefIdx);
       rewriter.replaceOp(op, memRef);
     } else if (mode == toy::LoweringPatternMode::Loop) {
       lowerOpToLoops(
