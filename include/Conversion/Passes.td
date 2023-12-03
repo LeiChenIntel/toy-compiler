@@ -9,6 +9,10 @@ def ConvertToyToMid: Pass<"convert-toy-to-mid", "mlir::ModuleOp"> {
 
     }];
     let constructor = "mlir::toy::createConvertToyToMidPass()";
+    let options = [
+      Option<"loweringPatternMode", "lowering-pattern-mode", "unsigned",
+          /*default=loop*/"0", "Toy to Mid lowering pattern mode, 0 to loop, 1 to vector">
+    ];
 
     let dependentDialects = [
       "mlir::AffineDialect",
@@ -16,6 +20,7 @@ def ConvertToyToMid: Pass<"convert-toy-to-mid", "mlir::ModuleOp"> {
       "mlir::arith::ArithDialect",
       "mlir::func::FuncDialect",
       "mlir::memref::MemRefDialect",
+      "mlir::vector::VectorDialect",
       "mlir::toy::ToyDialect"];
 }
 
