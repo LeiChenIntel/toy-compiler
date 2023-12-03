@@ -44,7 +44,11 @@ def add_tensors(a, b, c) {
 It can be run by
 
 ```bash
-add-tensors.exe example.toy
+add-tensors.exe example.toy --lower-pat=loop
+```
+or enabling a vectorization optimization as
+```bash
+add-tensors.exe example.toy --lower-pat=vector
 ```
 
 The output result is

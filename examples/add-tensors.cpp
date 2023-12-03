@@ -22,6 +22,11 @@ static cl::opt<std::string> inputFilename(cl::Positional,
                                           cl::init("-"),
                                           cl::value_desc("filename"));
 
+static cl::opt<enum mlir::toy::LoweringPatternMode> binOpeLoweringMode(
+    "lower-pat", cl::desc("Select the kind of lower pattern"),
+    cl::values(clEnumValN(mlir::toy::Loop, "loop", "use affine loop pattern")),
+    cl::values(clEnumValN(mlir::toy::Vector, "vector", "use vector pattern")));
+
 std::unique_ptr<toy::ModuleAST> parseInputFile(llvm::StringRef filename) {
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> fileOrErr =
       llvm::MemoryBuffer::getFileOrSTDIN(filename);
@@ -40,7 +45,6 @@ int main(int argc, char **argv) {
 
   mlir::MLIRContext ctx;
   ctx.getOrLoadDialect<mlir::toy::ToyDialect>();
-  ctx.loadDialect<mlir::vector::VectorDialect>();
 
   auto moduleAST = parseInputFile(inputFilename);
   if (!moduleAST) {
@@ -59,7 +63,8 @@ int main(int argc, char **argv) {
   mlir::OpPassManager &optPmToy = pm.nest<mlir::toy::FuncOp>();
   optPmToy.addPass(mlir::createCanonicalizerPass());
   optPmToy.addPass(mlir::createCSEPass());
-  pm.addPass(mlir::toy::createConvertToyToMidPass());
+  pm.addPass(
+      mlir::toy::createConvertToyToMidPass(binOpeLoweringMode.getValue()));
   mlir::OpPassManager &optPmFunc = pm.nest<mlir::func::FuncOp>();
   optPmFunc.addPass(mlir::createCanonicalizerPass());
   optPmFunc.addPass(mlir::createCSEPass());
