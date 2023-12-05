@@ -1,0 +1,6 @@
+add_executable(benchmark-add-tensors benchmark-add-tensors.cpp)
+add_dependencies(benchmark-add-tensors toy-translate)
+if(MSVC)
+    target_compile_options(benchmark-add-tensors PUBLIC "/arch:AVX2")
+endif()
+install(TARGETS benchmark-add-tensors RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
