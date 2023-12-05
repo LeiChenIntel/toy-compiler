@@ -39,13 +39,13 @@ int main() {
       double *src2 = createDoubleBuffer(n);
       double *dst = createDoubleBuffer(n);
 
-      const auto start = std::chrono::system_clock::now();
+      const auto start = std::chrono::high_resolution_clock::now();
       for (int i = 0; i < n; i++) {
         dst[i] = src1[i] + src2[i];
       }
-      const auto end = std::chrono::system_clock::now();
+      const auto end = std::chrono::high_resolution_clock::now();
       const auto last =
-          std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+          std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
       tcnt += last.count();
 
       free(src1);
@@ -54,7 +54,7 @@ int main() {
     }
 
     printf("[ADD LOOP NOT ALIGNED] Elements: %6d", n);
-    printf(" Time: %lldus\n", tcnt / iter);
+    printf(" Time: %lldns\n", tcnt / iter);
   }
 
   // AVX2 and aligned
@@ -65,20 +65,23 @@ int main() {
       double *src2 = createDoubleAlignedBuffer(n);
       double *dst = createDoubleAlignedBuffer(n);
 
-      const auto start = std::chrono::system_clock::now();
-      const int ndiv4 = n / 4;
-      for (int i = 0; i < ndiv4; i++) {
-        __m256d c1 = _mm256_load_pd(src1 + 4 * i);
-        __m256d c2 = _mm256_load_pd(src2 + 4 * i);
-        __m256d d = _mm256_add_pd(c1, c2);
-        _mm256_store_pd(dst + 4 * i, d);
+      const auto start = std::chrono::high_resolution_clock::now();
+      int i = 0;
+      __m256d c1;
+      __m256d c2;
+      __m256d d;
+      for (; i < n - 4; i += 4) {
+        c1 = _mm256_load_pd(src1 + i);
+        c2 = _mm256_load_pd(src2 + i);
+        d = _mm256_add_pd(c1, c2);
+        _mm256_store_pd(dst + i, d);
       }
-      for (int i = 4 * ndiv4; i < n; i++) {
+      for (; i < n; i++) {
         dst[i] = src1[i] + src2[i];
       }
-      const auto end = std::chrono::system_clock::now();
+      const auto end = std::chrono::high_resolution_clock::now();
       const auto last =
-          std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+          std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
       tcnt += last.count();
 
       _mm_free(src1);
@@ -86,7 +89,7 @@ int main() {
       _mm_free(dst);
     }
     printf("[ADD AVX2 ALIGNED] Elements: %6d", n);
-    printf(" Time: %lldus\n", tcnt / iter);
+    printf(" Time: %lldns\n", tcnt / iter);
   }
 
   return 0;
