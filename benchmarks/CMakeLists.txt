@@ -1,6 +1,15 @@
 # TODO: Generate libraries from Toy
+message(${PROJECT_BINARY_DIR})
+message(${CMAKE_CURRENT_BINARY_DIR})
+message(${LLVM_BINARY_DIR})
+set(TOY_TRANSLATE_BINARY_DIR "${PROJECT_BINARY_DIR}/test_lit/Release")
+set(LLVM_MLIR_BINARY_DIR "${LLVM_BINARY_DIR}/Release/bin")
+add_custom_command(OUTPUT add_tensors_8192.o
+        COMMAND "${TOY_TRANSLATE_BINARY_DIR}/toy-translate" add_tensors_8192.toy -emit=llvm -lower-pat=vector > add_tensors_8192.mlir |
+        "${LLVM_MLIR_BINARY_DIR}/llc" -mtriple=x86_64-pc-windows-msvc -mattr=avx2 --filetype=obj -o add_tensors_8192.o
+        DEPENDS toy-translate)
 
-add_library(AddTensors8192 STATIC add_tensors.o)
+add_library(AddTensors8192 STATIC add_tensors_8192.o)
 set_target_properties(AddTensors8192 PROPERTIES LINKER_LANGUAGE CXX)
 
 add_executable(benchmark-add-tensors benchmark-add-tensors.cpp)

@@ -9,7 +9,7 @@
 
 // Declare function of MLIR generated lib
 extern "C" {
-void add_tensors(MemRef *src1, MemRef *src2, MemRef *dst);
+void add_tensors(double *src1, double *src2, double *dst);
 }
 
 double *createDoubleBuffer(const int n) {
@@ -108,23 +108,12 @@ int main() {
       double *src2 = createDoubleAlignedBuffer(n);
       double *dst = createDoubleAlignedBuffer(n);
 
-      MemRef input1{src1, src1, 0, n, 0};
-      MemRef input2{src2, src2, 0, n, 0};
-      MemRef output{dst, dst, 0, n, 0};
-
       const auto start = std::chrono::high_resolution_clock::now();
-      add_tensors(&input1, &input2, &output);
+      add_tensors(src1, src2, dst);
       const auto end = std::chrono::high_resolution_clock::now();
       const auto last =
           std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
       tcnt += last.count();
-
-      printf("%lf\n", src1[0]);
-      printf("%lf\n", src2[0]);
-      printf("%lf\n", dst[0]);
-      printf("%lf\n", src1[1]);
-      printf("%lf\n", src2[1]);
-      printf("%lf\n", dst[1]);
 
       _mm_free(src1);
       _mm_free(src2);
