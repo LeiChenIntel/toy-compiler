@@ -1,9 +1,16 @@
+#include "ToyFrontend/Container.h"
+
 #include <chrono>
 #include <iostream>
 #include <random>
 #include <vector>
 
 #include <immintrin.h>
+
+// Declare function of MLIR generated lib
+extern "C" {
+void add_tensors(MemRef *src1, MemRef *src2, MemRef *dst);
+}
 
 double *createDoubleBuffer(const int n) {
   double *ptr = (double *)malloc(n * sizeof(double));
@@ -89,6 +96,41 @@ int main() {
       _mm_free(dst);
     }
     printf("[ADD AVX2 ALIGNED] Elements: %6d", n);
+    printf(" Time: %lldns\n", tcnt / iter);
+  }
+
+  // MLIR AVX2 and aligned
+  const std::vector<int> elementNum2{8192};
+  for (auto &n : elementNum2) {
+    long long tcnt = 0;
+    for (int t = 0; t < iter; t++) {
+      double *src1 = createDoubleAlignedBuffer(n);
+      double *src2 = createDoubleAlignedBuffer(n);
+      double *dst = createDoubleAlignedBuffer(n);
+
+      MemRef input1{src1, src1, 0, n, 0};
+      MemRef input2{src2, src2, 0, n, 0};
+      MemRef output{dst, dst, 0, n, 0};
+
+      const auto start = std::chrono::high_resolution_clock::now();
+      add_tensors(&input1, &input2, &output);
+      const auto end = std::chrono::high_resolution_clock::now();
+      const auto last =
+          std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+      tcnt += last.count();
+
+      printf("%lf\n", src1[0]);
+      printf("%lf\n", src2[0]);
+      printf("%lf\n", dst[0]);
+      printf("%lf\n", src1[1]);
+      printf("%lf\n", src2[1]);
+      printf("%lf\n", dst[1]);
+
+      _mm_free(src1);
+      _mm_free(src2);
+      _mm_free(dst);
+    }
+    printf("[MLIR ADD AVX2 ALIGNED] Elements: %6d", n);
     printf(" Time: %lldns\n", tcnt / iter);
   }
 

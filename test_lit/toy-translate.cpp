@@ -5,6 +5,7 @@
 
 #include <mlir/Dialect/Affine/Passes.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/Dialect/LLVMIR/Transforms/Passes.h>
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/IR/AsmState.h>
@@ -117,6 +118,8 @@ int dumpMLIR(mlir::MLIRContext &ctx,
   }
 
   if (isLoweringToLLVM) {
+    pm.addNestedPass<mlir::func::FuncOp>(
+        mlir::LLVM::createRequestCWrappersPass());
     pm.addPass(mlir::toy::createConvertMidToLLVMPass());
   }
 
@@ -150,7 +153,7 @@ int dumpLLVMIR(mlir::ModuleOp module) {
     llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
     return -1;
   }
-  llvm::errs() << *llvmModule << "\n";
+  llvm::outs() << *llvmModule << "\n";
   return 0;
 }
 
