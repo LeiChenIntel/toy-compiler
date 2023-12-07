@@ -1,6 +1,6 @@
 # Generate libraries from Toy
 if(MSVC)
-    set(TOY_TRANSLATE_EXE "${PROJECT_BINARY_DIR}/test_lit/Release/toy-translate.exe")
+    set(TOY_TRANSLATE_EXE ${PROJECT_BINARY_DIR}/test_lit/Release/toy-translate.exe)
     set(LLVM_LLC_EXE ${LLVM_BINARY_DIR}/Release/bin/llc.exe)
 else()
     message(FATAL_ERROR "Unsupported operating system")

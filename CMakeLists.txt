@@ -13,7 +13,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}")
 
 # Define options
+# Need AVX2 support for benchmarks! Only support release mode!
 option(ENABLE_TOY_BENCHMARKS "Enable Toy benchmarks" ON)
+if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(WARNING "Please set ENABLE_TOY_BENCHMARKS OFF for RelWithDebInfo and Debug.")
+endif()
 
 # Use /MD instead of /MT in googletest
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -44,6 +48,5 @@ add_subdirectory(test_lit)
 add_subdirectory(test_unit)
 
 if(ENABLE_TOY_BENCHMARKS)
-    # Need AVX2 support for benchmarks!
     add_subdirectory(benchmarks)
 endif()

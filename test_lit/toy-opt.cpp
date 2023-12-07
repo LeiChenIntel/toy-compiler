@@ -10,7 +10,6 @@
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
 int main(int argc, char **argv) {
-  mlir::registerAllPasses();
   mlir::registerCanonicalizerPass();
   mlir::toy::registerConvertToyToMid();
   mlir::toy::registerConvertMidToLLVM();
