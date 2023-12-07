@@ -1,13 +1,14 @@
-# TODO: Generate libraries from Toy
-message(${PROJECT_BINARY_DIR})
-message(${CMAKE_CURRENT_BINARY_DIR})
-message(${LLVM_BINARY_DIR})
-set(TOY_TRANSLATE_BINARY_DIR "${PROJECT_BINARY_DIR}/test_lit/Release")
-set(LLVM_MLIR_BINARY_DIR "${LLVM_BINARY_DIR}/Release/bin")
+# Generate libraries from Toy
+if(MSVC)
+    set(TOY_TRANSLATE_EXE "${PROJECT_BINARY_DIR}/test_lit/Release/toy-translate.exe")
+    set(LLVM_LLC_EXE ${LLVM_BINARY_DIR}/Release/bin/llc.exe)
+else()
+    message(FATAL_ERROR "Unsupported operating system")
+endif()
 add_custom_command(OUTPUT add_tensors_8192.o
-        COMMAND "${TOY_TRANSLATE_BINARY_DIR}/toy-translate" add_tensors_8192.toy -emit=llvm -lower-pat=vector > add_tensors_8192.mlir |
-        "${LLVM_MLIR_BINARY_DIR}/llc" -mtriple=x86_64-pc-windows-msvc -mattr=avx2 --filetype=obj -o add_tensors_8192.o
-        DEPENDS toy-translate)
+    COMMAND ${TOY_TRANSLATE_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/add_tensors_8192.toy -emit=llvm -lower-pat=vector > add_tensors_8192.mlir
+    COMMAND ${LLVM_LLC_EXE} add_tensors_8192.mlir -mtriple=x86_64-pc-windows-msvc -mattr=avx2 --filetype=obj -o add_tensors_8192.o
+    DEPENDS toy-translate)
 
 add_library(AddTensors8192 STATIC add_tensors_8192.o)
 set_target_properties(AddTensors8192 PROPERTIES LINKER_LANGUAGE CXX)
