@@ -1,0 +1,11 @@
+def funcInputs() {
+  var a<8192> = [0];
+  var b<8192> = [0];
+  var c<8192> = [0];
+}
+
+def add_tensors(a, b, c) {
+  var d = a + b;
+  store(d, c);
+  return;
+}
