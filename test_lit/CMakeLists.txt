@@ -4,7 +4,7 @@ add_llvm_executable(toy-opt toy-opt.cpp PARTIAL_SOURCES_INTENDED)
 # toy-opt is designed to test single pass lit
 target_include_directories(toy-opt SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS} ${MLIR_INCLUDE_DIRS})
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
-target_link_libraries(toy-opt PRIVATE ${dialect_libs} MLIROptLib MLIRTransforms MLIRPass)
+target_link_libraries(toy-opt PRIVATE ${dialect_libs} MLIROptLib MLIRTransforms MLIRPass MLIRVectorToLLVM)
 target_link_libraries(toy-opt PRIVATE ToyIR ToyTransforms ToyConversion)
 install(TARGETS toy-opt RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
 

@@ -59,6 +59,10 @@ cmake -G "Visual Studio 16 2019" -A x64 -D CMAKE_PREFIX_PATH="$LLVM_HOME_DIR/bui
 cmake --build . --target install
 ```
 
+Other CMake options:
+
+`-DENABLE_TOY_BENCHMARKS`: Enable benchmarks. Compare the results with loop and AVX instructions. Need AVX support and release build type.
+
 ### How to run the target
 
 #### toy-opt
@@ -86,6 +90,8 @@ Options:
 -emit: Choose an IR to be dumped, i.e., ast, mlir, mlir-mid.
 
 -opt: If optimization pass is added, such as canonicalization and common sub-expressions elimination.
+
+-lower-pat: Choose loop or vectorization during the lowering, i.e., loop, vector.
 
 Here is an example to dump MidIR by toy-translate,
 ```bash
@@ -131,3 +137,7 @@ likes as
 #### Examples
 
 More details can be found on page [examples](docs/examples.md).
+
+#### Benchmarks
+
+More details can be found on page [benchmarks](docs/benchmarks.md)

@@ -150,7 +150,7 @@ int dumpLLVMIR(mlir::ModuleOp module) {
     llvm::errs() << "Failed to optimize LLVM IR " << err << "\n";
     return -1;
   }
-  llvm::errs() << *llvmModule << "\n";
+  llvm::outs() << *llvmModule << "\n";
   return 0;
 }
 
