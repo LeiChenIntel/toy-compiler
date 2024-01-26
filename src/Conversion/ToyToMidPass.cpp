@@ -130,6 +130,7 @@ public:
       if (tensorType.getRank() != 1) {
         emitError(loc, "Only support 1 dim tensor");
       }
+      // TODO: If rank > 1, need reshape operation.
       const auto tensorShape = tensorType.getShape();
       const auto elementType = tensorType.getElementType();
       typename ToyBinaryOp::Adaptor binaryAdaptor(operands);
@@ -144,25 +145,31 @@ public:
 
       // Handle 16 f64 (4 ymm) in loops
       // For example, 65 f64 are divided into 4 x 16 + 1
-      const auto loadedEleType = VectorType::get({16}, elementType);
-      SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), 0);
-      SmallVector<int64_t, 4> steps(tensorType.getRank(), 16);
-      SmallVector<int64_t, 4> upperBounds(tensorType.getRank(), 16 * num16f64);
-      buildAffineLoopNest(
-          rewriter, loc, lowerBounds, upperBounds, steps,
-          [&](OpBuilder &nestedBuilder, Location loc, ValueRange loopIvs) {
-            auto loadedVectorLhs = rewriter.create<vector::LoadOp>(
-                loc, loadedEleType, binaryAdaptor.getLhs(), loopIvs);
-            auto loadedVectorRhs = rewriter.create<vector::LoadOp>(
-                loc, loadedEleType, binaryAdaptor.getRhs(), loopIvs);
-            mlir::Value valueToStore = rewriter.create<LoweredBinaryOp>(
-                loc, loadedVectorLhs, loadedVectorRhs);
-            rewriter.create<vector::StoreOp>(loc, valueToStore, memRef,
-                                             loopIvs);
-          });
+      if (num16f64) {
+        const auto loadedEleType = VectorType::get({16}, elementType);
+        SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), 0);
+        SmallVector<int64_t, 4> steps(tensorType.getRank(), 16);
+        SmallVector<int64_t, 4> upperBounds(tensorType.getRank(),
+                                            16 * num16f64);
+        buildAffineLoopNest(
+            rewriter, loc, lowerBounds, upperBounds, steps,
+            [&](OpBuilder &nestedBuilder, Location loc, ValueRange loopIvs) {
+              auto loadedVectorLhs = rewriter.create<vector::LoadOp>(
+                  loc, loadedEleType, binaryAdaptor.getLhs(), loopIvs);
+              auto loadedVectorRhs = rewriter.create<vector::LoadOp>(
+                  loc, loadedEleType, binaryAdaptor.getRhs(), loopIvs);
+              mlir::Value valueToStore = rewriter.create<LoweredBinaryOp>(
+                  loc, loadedVectorLhs, loadedVectorRhs);
+              rewriter.create<vector::StoreOp>(loc, valueToStore, memRef,
+                                               loopIvs);
+            });
+      }
 
       // Handle residue f64 within number 16
       if (residue) {
+        SmallVector<int64_t, 4> residueShape;
+        residueShape.push_back(residue);
+        const auto loadedEleType = VectorType::get(residueShape, elementType);
         auto cst = rewriter.create<arith::ConstantOp>(
             loc, rewriter.getIndexType(), rewriter.getIndexAttr(num16f64 * 16));
         SmallVector<mlir::Value, 4> memRefIdx(tensorShape.size(), cst);
