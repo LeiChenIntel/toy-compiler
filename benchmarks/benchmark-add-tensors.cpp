@@ -42,13 +42,7 @@ bool checkAccuracy(double *dst, double *src1, double *src2, int n) {
   return true;
 }
 
-int main() {
-  const std::vector<int> elementNum{8192, 16384, 32768, 65536, 131072, 262144};
-  const int iter = 100;
-  std::vector<long long> loopResults;
-  std::vector<long long> avx2Results;
-
-  // Loop and not aligned
+void loopNotAligned(const std::vector<int> &elementNum, int iter) {
   for (auto &n : elementNum) {
     long long tcnt = 0;
     for (int t = 0; t < iter; t++) {
@@ -74,8 +68,9 @@ int main() {
     printf("[ADD LOOP NOT ALIGNED] Elements: %6d", n);
     printf(" Time: %lldns\n", tcnt / iter);
   }
+}
 
-  // AVX2 and aligned
+void avx2Aligned(const std::vector<int> &elementNum, int iter) {
   for (auto &n : elementNum) {
     long long tcnt = 0;
     for (int t = 0; t < iter; t++) {
@@ -118,10 +113,10 @@ int main() {
     printf("[ADD AVX2 ALIGNED] Elements: %6d", n);
     printf(" Time: %lldns\n", tcnt / iter);
   }
+}
 
-  // MLIR AVX2 and aligned
-  const std::vector<int> elementNum2{8192};
-  for (auto &n : elementNum2) {
+void avx2MLIRAligned(const std::vector<int> &elementNum, int iter) {
+  for (auto &n : elementNum) {
     long long tcnt = 0;
     for (int t = 0; t < iter; t++) {
       double *src1 = createDoubleAlignedBuffer(n);
@@ -143,6 +138,23 @@ int main() {
     printf("[MLIR ADD AVX2 ALIGNED] Elements: %6d", n);
     printf(" Time: %lldns\n", tcnt / iter);
   }
+}
+
+int main() {
+  const std::vector<int> elementNum{8192, 16384, 32768, 65536, 131072, 262144};
+  const int iter = 100;
+  std::vector<long long> loopResults;
+  std::vector<long long> avx2Results;
+
+  // Loop and not aligned
+  loopNotAligned(elementNum, iter);
+
+  // AVX2 and aligned
+  avx2Aligned(elementNum, iter);
+
+  // MLIR AVX2 and aligned
+  const std::vector<int> elementNum2{8192};
+  avx2MLIRAligned(elementNum2, iter);
 
   return 0;
 }
