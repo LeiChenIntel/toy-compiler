@@ -132,19 +132,19 @@ public:
       }
       const auto tensorShape = tensorType.getShape();
       const auto elementType = tensorType.getElementType();
-      const auto loadedEleType = VectorType::get({16}, elementType);
       typename ToyBinaryOp::Adaptor binaryAdaptor(operands);
 
       // Need to cast buffer according to AVX register number to avoid reload.
       // There are 16 ymms and each of ymm can handle 4 f64, then we can the
       // upper bound should be 64 f64. Here buffer is cut into 16 f64 to save
       // ymm usage.
-      int64_t length = tensorShape[0];
-      int64_t num16f64 = length / 16;
-      int64_t residue = length % 16;
+      const int64_t length = tensorShape[0];
+      const int64_t num16f64 = length / 16;
+      const int64_t residue = length % 16;
 
       // Handle 16 f64 (4 ymm) in loops
       // For example, 65 f64 are divided into 4 x 16 + 1
+      const auto loadedEleType = VectorType::get({16}, elementType);
       SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), 0);
       SmallVector<int64_t, 4> steps(tensorType.getRank(), 16);
       SmallVector<int64_t, 4> upperBounds(tensorType.getRank(), 16 * num16f64);
@@ -163,7 +163,7 @@ public:
 
       // Handle residue f64 within number 16
       if (residue) {
-        mlir::Value cst = rewriter.create<arith::ConstantOp>(
+        auto cst = rewriter.create<arith::ConstantOp>(
             loc, rewriter.getIndexType(), rewriter.getIndexAttr(num16f64 * 16));
         SmallVector<mlir::Value, 4> memRefIdx(tensorShape.size(), cst);
         auto loadedLhs = rewriter.create<vector::LoadOp>(
@@ -288,8 +288,6 @@ class ToyFuncOpPattern : public OpConversionPattern<toy::FuncOp> {
     for (auto &a : args) {
       auto tensorType = a.getType().cast<TensorType>();
       auto memRefType = convertTensorToMemRef(tensorType);
-      // auto vecType = VectorType::get({4}, tensorType.getElementType());
-      // auto memRefType = MemRefType::get({1}, vecType);
       a.setType(memRefType);
       argTypes.push_back(memRefType);
     }
