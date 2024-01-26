@@ -127,61 +127,53 @@ public:
       mlir::Value memRef = createStoreOpMemRef(op, rewriter);
 
       const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+      if (tensorType.getRank() != 1) {
+        emitError(loc, "Only support 1 dim tensor");
+      }
       const auto tensorShape = tensorType.getShape();
       const auto elementType = tensorType.getElementType();
       const auto loadedEleType = VectorType::get({16}, elementType);
       typename ToyBinaryOp::Adaptor binaryAdaptor(operands);
 
-      // // Assume the memory allocation is 32-bit aligned.
-      // auto memAlignLhs = rewriter.create<memref::AssumeAlignmentOp>(
-      //     loc, binaryAdaptor.getLhs(), 32);
-      // auto memAlignRhs = rewriter.create<memref::AssumeAlignmentOp>(
-      //     loc, binaryAdaptor.getRhs(), 32);
-      //
-      // auto vecType = VectorType::get(tensorShape, elementType);
-      // auto memRefType = MemRefType::get({1}, vecType);
-      //
-      // auto lhs = binaryAdaptor.getLhs();
-      // vector::TypeCastOp lhsCast = rewriter.create<vector::TypeCastOp>(loc,
-      // lhs); lhsCast.getType().dump();
-      // //auto lhsMemCast = rewriter.create<memref::CastOp>(loc, ,lhsCast)
-      // auto aa = lhsCast.getType();
-      // llvm::errs() << aa.getRank() << "\n";
-      // aa.getElementType().dump();
-      // //llvm::errs() << aa.hasRank();
-      //
-      // //auto lhsMemCast = rewriter.create<memref::CastOp>(loc, lhsCast);
-      // //lhs.setType(memRefType);
-      // auto rhs = binaryAdaptor.getRhs();
-      // auto rhsCast = rewriter.create<vector::TypeCastOp>(loc, rhs);
-      // //rhs.setType(memRefType);
-
       // Need to cast buffer according to AVX register number to avoid reload.
       // There are 16 ymms and each of ymm can handle 4 f64, then we can the
       // upper bound should be 64 f64. Here buffer is cut into 16 f64 to save
       // ymm usage.
+      int64_t length = tensorShape[0];
+      int64_t num16f64 = length / 16;
+      int64_t residue = length % 16;
 
-      mlir::Value cst = rewriter.create<arith::ConstantOp>(
-          loc, rewriter.getIndexType(), rewriter.getIndexAttr(0));
-      SmallVector<mlir::Value, 4> memRefIdx(tensorShape.size(), cst);
-      auto loadedVectorLhs = rewriter.create<vector::LoadOp>(
-          loc, loadedEleType, binaryAdaptor.getLhs(), memRefIdx);
-      auto loadedVectorRhs = rewriter.create<vector::LoadOp>(
-          loc, loadedEleType, binaryAdaptor.getRhs(), memRefIdx);
-      mlir::Value valueToStore = rewriter.create<LoweredBinaryOp>(
-          loc, loadedVectorLhs, loadedVectorRhs);
-      rewriter.create<vector::StoreOp>(loc, valueToStore, memRef, memRefIdx);
+      // Handle 16 f64 (4 ymm) in loops
+      // For example, 65 f64 are divided into 4 x 16 + 1
+      SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), 0);
+      SmallVector<int64_t, 4> steps(tensorType.getRank(), 16);
+      SmallVector<int64_t, 4> upperBounds(tensorType.getRank(), 16 * num16f64);
+      buildAffineLoopNest(
+          rewriter, loc, lowerBounds, upperBounds, steps,
+          [&](OpBuilder &nestedBuilder, Location loc, ValueRange loopIvs) {
+            auto loadedVectorLhs = rewriter.create<vector::LoadOp>(
+                loc, loadedEleType, binaryAdaptor.getLhs(), loopIvs);
+            auto loadedVectorRhs = rewriter.create<vector::LoadOp>(
+                loc, loadedEleType, binaryAdaptor.getRhs(), loopIvs);
+            mlir::Value valueToStore = rewriter.create<LoweredBinaryOp>(
+                loc, loadedVectorLhs, loadedVectorRhs);
+            rewriter.create<vector::StoreOp>(loc, valueToStore, memRef,
+                                             loopIvs);
+          });
 
-      mlir::Value cst1 = rewriter.create<arith::ConstantOp>(
-          loc, rewriter.getIndexType(), rewriter.getIndexAttr(64));
-      SmallVector<mlir::Value, 4> memRefIdx1(tensorShape.size(), cst1);
-      auto loadedVectorLhs1 = rewriter.create<vector::LoadOp>(
-          loc, loadedEleType, binaryAdaptor.getLhs(), memRefIdx1);
-      auto loadedVectorRhs1 = rewriter.create<vector::LoadOp>(
-          loc, loadedEleType, binaryAdaptor.getRhs(), memRefIdx1);
-      mlir::Value valueToStore1 = rewriter.create<LoweredBinaryOp>(
-          loc, loadedVectorLhs1, loadedVectorRhs1);
-      rewriter.create<vector::StoreOp>(loc, valueToStore1, memRef, memRefIdx1);
+      // Handle residue f64 within number 16
+      if (residue) {
+        mlir::Value cst = rewriter.create<arith::ConstantOp>(
+            loc, rewriter.getIndexType(), rewriter.getIndexAttr(num16f64 * 16));
+        SmallVector<mlir::Value, 4> memRefIdx(tensorShape.size(), cst);
+        auto loadedLhs = rewriter.create<vector::LoadOp>(
+            loc, loadedEleType, binaryAdaptor.getLhs(), memRefIdx);
+        auto loadedRhs = rewriter.create<vector::LoadOp>(
+            loc, loadedEleType, binaryAdaptor.getRhs(), memRefIdx);
+        mlir::Value valueToStore =
+            rewriter.create<LoweredBinaryOp>(loc, loadedLhs, loadedRhs);
+        rewriter.create<vector::StoreOp>(loc, valueToStore, memRef, memRefIdx);
+      }
 
       rewriter.replaceOp(op, memRef);
     } else if (mode == toy::LoweringPatternMode::Loop) {
