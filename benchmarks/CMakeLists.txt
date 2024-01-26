@@ -10,10 +10,10 @@ elseif(UNIX)
 else()
     message(FATAL_ERROR "Unsupported operating system")
 endif()
-#add_custom_command(OUTPUT add_tensors_8192.o
-#    COMMAND ${TOY_TRANSLATE_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/add_tensors_8192.toy -emit=llvm -lower-pat=vector > add_tensors_8192.mlir
-#    COMMAND ${LLVM_LLC_EXE} add_tensors_8192.mlir -mtriple=${TRIPLE} -mattr=avx2 --filetype=obj -o add_tensors_8192.o
-#    DEPENDS toy-translate)
+add_custom_command(OUTPUT add_tensors_8192.o
+    COMMAND ${TOY_TRANSLATE_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/add_tensors_8192.toy -emit=llvm -lower-pat=vector > add_tensors_8192.mlir
+    COMMAND ${LLVM_LLC_EXE} add_tensors_8192.mlir -mtriple=${TRIPLE} -mattr=avx2 --filetype=obj -o add_tensors_8192.o
+    DEPENDS toy-translate)
 
 add_library(AddTensors8192 STATIC add_tensors_8192.o)
 set_target_properties(AddTensors8192 PROPERTIES LINKER_LANGUAGE CXX)
