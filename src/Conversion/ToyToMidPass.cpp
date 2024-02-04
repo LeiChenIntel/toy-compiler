@@ -139,23 +139,46 @@ public:
       // There are 16 ymms and each of ymm can handle 4 f64, then we can the
       // upper bound should be 64 f64. Here buffer is cut into 16 f64 to save
       // ymm usage.
-      const int64_t length = tensorShape[0];
+      const int64_t length = tensorType.getNumElements();
       const int64_t num16f64 = length / 16;
       const int64_t residue = length % 16;
+
+      op->getOperand(0).dump();
+      op->getOperand(1).dump();
+      op->getOperand(0).getType().dump();
+      op->getOperand(0).getType().cast<ShapedType>().getRank();
+      llvm::errs()
+          << op->getOperand(0).getType().cast<ShapedType>().getNumElements()
+          << "\n";
+      binaryAdaptor.getLhs().getType().dump();
+      binaryAdaptor.getLhs().getType().cast<ShapedType>().getElementType().dump();
+      int64_t num = binaryAdaptor.getLhs().getType().cast<ShapedType>().getNumElements();
+      MemRefType tp = MemRefType::get({num}, binaryAdaptor.getLhs().getType().cast<ShapedType>().getElementType());
+      MemRefType cstp = MemRefType::get({1}, IntegerType::get(getContext(), 32));
+      cstp.dump();
+      auto bb = mlir::DenseElementsAttr::get(cstp, num);
+      bb.dump();
+      Value vp = rewriter.create<arith::ConstantOp>(
+          loc, DenseElementsAttr::get(
+                   cstp, IntegerAttr::get(cstp.getElementType(), num)));;
+      vp.dump();
+      //auto memTp = MemRefType::get({num}, cstp);
+      //Value vp = rewriter.create<memref::AllocaOp>(loc, memTp);
+      auto a = rewriter.create<memref::ReshapeOp>(loc, tp, binaryAdaptor.getLhs(), vp);
 
       // Handle 16 f64 (4 ymm) in loops
       // For example, 65 f64 are divided into 4 x 16 + 1
       if (num16f64) {
         const auto loadedEleType = VectorType::get({16}, elementType);
-        SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), 0);
-        SmallVector<int64_t, 4> steps(tensorType.getRank(), 16);
-        SmallVector<int64_t, 4> upperBounds(tensorType.getRank(),
+        SmallVector<int64_t, 4> lowerBounds(1, 0);
+        SmallVector<int64_t, 4> steps(1, 16);
+        SmallVector<int64_t, 4> upperBounds(1,
                                             16 * num16f64);
         buildAffineLoopNest(
             rewriter, loc, lowerBounds, upperBounds, steps,
             [&](OpBuilder &nestedBuilder, Location loc, ValueRange loopIvs) {
               auto loadedVectorLhs = rewriter.create<vector::LoadOp>(
-                  loc, loadedEleType, binaryAdaptor.getLhs(), loopIvs);
+                  loc, loadedEleType, a, loopIvs);
               auto loadedVectorRhs = rewriter.create<vector::LoadOp>(
                   loc, loadedEleType, binaryAdaptor.getRhs(), loopIvs);
               mlir::Value valueToStore = rewriter.create<LoweredBinaryOp>(
@@ -172,9 +195,9 @@ public:
         const auto loadedEleType = VectorType::get(residueShape, elementType);
         auto cst = rewriter.create<arith::ConstantOp>(
             loc, rewriter.getIndexType(), rewriter.getIndexAttr(num16f64 * 16));
-        SmallVector<mlir::Value, 4> memRefIdx(tensorShape.size(), cst);
+        SmallVector<mlir::Value, 4> memRefIdx(1, cst);
         auto loadedLhs = rewriter.create<vector::LoadOp>(
-            loc, loadedEleType, binaryAdaptor.getLhs(), memRefIdx);
+            loc, loadedEleType, a, memRefIdx);
         auto loadedRhs = rewriter.create<vector::LoadOp>(
             loc, loadedEleType, binaryAdaptor.getRhs(), memRefIdx);
         mlir::Value valueToStore =
