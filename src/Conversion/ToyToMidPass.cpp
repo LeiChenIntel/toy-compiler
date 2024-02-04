@@ -164,22 +164,29 @@ public:
                                                  .getType()
                                                  .template cast<ShapedType>()
                                                  .getElementType());
-      MemRefType cstp =
-          MemRefType::get({1}, IntegerType::get(getContext(), 32));
-      cstp.dump();
-      // mlir::bufferization::BufferizationOptions options;
-      // FailureOr<Value> shapeBuffer = getBuffer(rewriter, {num});
-      //  auto memTp = MemRefType::get({num}, cstp);
-      //  Value vp = rewriter.create<memref::AllocaOp>(loc, memTp);
-      auto initValueAttr = IntegerAttr::get(cstp.getElementType(), num);
-      auto vtType = mlir::RankedTensorType::get({1}, cstp.getElementType());
-      auto dcst = DenseElementsAttr::get(vtType, initValueAttr);
-      dcst.dump();
-      Value vp = rewriter.create<arith::ConstantOp>(loc, dcst);
-      auto memRefType = convertTensorToMemRef(vtType);
-      vp.setType(memRefType);
-      auto a = rewriter.create<memref::ReshapeOp>(loc, tp,
-                                                  binaryAdaptor.getLhs(), vp);
+      //      MemRefType cstp =
+      //          MemRefType::get({1}, IntegerType::get(getContext(), 32));
+      //      cstp.dump();
+      //      // mlir::bufferization::BufferizationOptions options;
+      //      // FailureOr<Value> shapeBuffer = getBuffer(rewriter, {num});
+      //      //  auto memTp = MemRefType::get({num}, cstp);
+      //      //  Value vp = rewriter.create<memref::AllocaOp>(loc, memTp);
+      //      auto initValueAttr = IntegerAttr::get(cstp.getElementType(), num);
+      //      auto vtType = mlir::RankedTensorType::get({1},
+      //      cstp.getElementType()); auto dcst = DenseElementsAttr::get(vtType,
+      //      initValueAttr); dcst.dump(); Value vp =
+      //      rewriter.create<arith::ConstantOp>(loc, dcst);
+      //      //      auto memRefType = convertTensorToMemRef(vtType);
+      //      //      vp.setType(memRefType);
+      //      auto a = rewriter.create<memref::ReshapeOp>(loc, tp,
+      //                                                  binaryAdaptor.getLhs(),
+      //                                                  vp);
+      std::vector<int64_t> si = {num};
+      std::vector<int64_t> st = {1};
+      auto a = rewriter.create<memref::ReinterpretCastOp>(
+          loc, tp, binaryAdaptor.getLhs(), 0, ArrayRef(si), ArrayRef(st));
+      //      auto a = rewriter.create<memref::ReinterpretCastOp>(
+      //          loc, tp, binaryAdaptor.getLhs());
 
       // Handle 16 f64 (4 ymm) in loops
       // For example, 65 f64 are divided into 4 x 16 + 1
