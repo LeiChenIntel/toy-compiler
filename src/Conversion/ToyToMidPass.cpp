@@ -151,20 +151,35 @@ public:
           << op->getOperand(0).getType().cast<ShapedType>().getNumElements()
           << "\n";
       binaryAdaptor.getLhs().getType().dump();
-      binaryAdaptor.getLhs().getType().cast<ShapedType>().getElementType().dump();
-      int64_t num = binaryAdaptor.getLhs().getType().cast<ShapedType>().getNumElements();
-      MemRefType tp = MemRefType::get({num}, binaryAdaptor.getLhs().getType().cast<ShapedType>().getElementType());
-      MemRefType cstp = MemRefType::get({1}, IntegerType::get(getContext(), 32));
+      binaryAdaptor.getLhs()
+          .getType()
+          .template cast<ShapedType>()
+          .getElementType()
+          .dump();
+      int64_t num = binaryAdaptor.getLhs()
+                        .getType()
+                        .template cast<ShapedType>()
+                        .getNumElements();
+      MemRefType tp = MemRefType::get({num}, binaryAdaptor.getLhs()
+                                                 .getType()
+                                                 .template cast<ShapedType>()
+                                                 .getElementType());
+      MemRefType cstp =
+          MemRefType::get({1}, IntegerType::get(getContext(), 32));
       cstp.dump();
-      auto bb = mlir::DenseElementsAttr::get(cstp, num);
-      bb.dump();
-      Value vp = rewriter.create<arith::ConstantOp>(
-          loc, DenseElementsAttr::get(
-                   cstp, IntegerAttr::get(cstp.getElementType(), num)));;
-      vp.dump();
-      //auto memTp = MemRefType::get({num}, cstp);
-      //Value vp = rewriter.create<memref::AllocaOp>(loc, memTp);
-      auto a = rewriter.create<memref::ReshapeOp>(loc, tp, binaryAdaptor.getLhs(), vp);
+      // mlir::bufferization::BufferizationOptions options;
+      // FailureOr<Value> shapeBuffer = getBuffer(rewriter, {num});
+      //  auto memTp = MemRefType::get({num}, cstp);
+      //  Value vp = rewriter.create<memref::AllocaOp>(loc, memTp);
+      auto initValueAttr = IntegerAttr::get(cstp.getElementType(), num);
+      auto vtType = mlir::RankedTensorType::get({1}, cstp.getElementType());
+      auto dcst = DenseElementsAttr::get(vtType, initValueAttr);
+      dcst.dump();
+      Value vp = rewriter.create<arith::ConstantOp>(loc, dcst);
+      auto memRefType = convertTensorToMemRef(vtType);
+      vp.setType(memRefType);
+      auto a = rewriter.create<memref::ReshapeOp>(loc, tp,
+                                                  binaryAdaptor.getLhs(), vp);
 
       // Handle 16 f64 (4 ymm) in loops
       // For example, 65 f64 are divided into 4 x 16 + 1
@@ -172,8 +187,7 @@ public:
         const auto loadedEleType = VectorType::get({16}, elementType);
         SmallVector<int64_t, 4> lowerBounds(1, 0);
         SmallVector<int64_t, 4> steps(1, 16);
-        SmallVector<int64_t, 4> upperBounds(1,
-                                            16 * num16f64);
+        SmallVector<int64_t, 4> upperBounds(1, 16 * num16f64);
         buildAffineLoopNest(
             rewriter, loc, lowerBounds, upperBounds, steps,
             [&](OpBuilder &nestedBuilder, Location loc, ValueRange loopIvs) {
@@ -196,8 +210,8 @@ public:
         auto cst = rewriter.create<arith::ConstantOp>(
             loc, rewriter.getIndexType(), rewriter.getIndexAttr(num16f64 * 16));
         SmallVector<mlir::Value, 4> memRefIdx(1, cst);
-        auto loadedLhs = rewriter.create<vector::LoadOp>(
-            loc, loadedEleType, a, memRefIdx);
+        auto loadedLhs =
+            rewriter.create<vector::LoadOp>(loc, loadedEleType, a, memRefIdx);
         auto loadedRhs = rewriter.create<vector::LoadOp>(
             loc, loadedEleType, binaryAdaptor.getRhs(), memRefIdx);
         mlir::Value valueToStore =
