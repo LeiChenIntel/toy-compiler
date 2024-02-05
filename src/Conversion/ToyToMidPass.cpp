@@ -151,7 +151,7 @@ public:
         auto newrhsType = MemRefType::get({num}, rhsType.getElementType());
         std::vector<int64_t> newSize = {num};
         std::vector<int64_t> newStride = {1};
-        lhsInput = rewriter.create<memref::ReinterpretCastOp>(
+        rhsInput = rewriter.create<memref::ReinterpretCastOp>(
             loc, newrhsType, rhsInput, 0, ArrayRef(newSize),
             ArrayRef(newStride));
       }
@@ -187,7 +187,7 @@ public:
               auto loadedVectorLhs = rewriter.create<vector::LoadOp>(
                   loc, loadedEleType, lhsInput, loopIvs);
               auto loadedVectorRhs = rewriter.create<vector::LoadOp>(
-                  loc, loadedEleType, lhsInput, loopIvs);
+                  loc, loadedEleType, rhsInput, loopIvs);
               mlir::Value valueToStore = rewriter.create<LoweredBinaryOp>(
                   loc, loadedVectorLhs, loadedVectorRhs);
               rewriter.create<vector::StoreOp>(loc, valueToStore, memRef,
@@ -206,7 +206,7 @@ public:
         auto loadedLhs = rewriter.create<vector::LoadOp>(loc, loadedEleType,
                                                          lhsInput, memRefIdx);
         auto loadedRhs = rewriter.create<vector::LoadOp>(loc, loadedEleType,
-                                                         lhsInput, memRefIdx);
+                                                         rhsInput, memRefIdx);
         mlir::Value valueToStore =
             rewriter.create<LoweredBinaryOp>(loc, loadedLhs, loadedRhs);
         rewriter.create<vector::StoreOp>(loc, valueToStore, memRef, memRefIdx);
