@@ -130,6 +130,7 @@ public:
       const auto elementType = tensorType.getElementType();
       typename ToyBinaryOp::Adaptor binaryAdaptor(operands);
 
+      // Reshape high dimension memref to 1D memref
       auto lhsInput = binaryAdaptor.getLhs();
       auto lhsType =
           binaryAdaptor.getLhs().getType().template cast<ShapedType>();
@@ -157,7 +158,6 @@ public:
       }
 
       if (tensorType.getRank() > 1) {
-        // Need to reshape MemRef to 1D shape
         const int64_t length = tensorType.getNumElements();
         auto memRefType = MemRefType::get({length}, elementType);
         std::vector<int64_t> newSize = {length};
