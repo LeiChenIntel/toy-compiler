@@ -314,6 +314,7 @@ private:
       value = builder.create<ReshapeOp>(loc(vardecl.loc()),
                                         getType(vardecl.getType()), value);
     }
+    // TODO: Check if value is ConstantOp and change type if precision is mismatch
 
     // Register the value in the symbol table.
     if (failed(declare(vardecl.getName(), value)))
