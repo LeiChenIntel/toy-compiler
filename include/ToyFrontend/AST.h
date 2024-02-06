@@ -26,10 +26,12 @@
 
 namespace toy {
 
+enum VarPrecision { f64, f32, f16 };
+
 /// A variable type with shape information.
 struct VarType {
   std::vector<int64_t> shape;
-  // TODO:
+  VarPrecision var_precision;
 };
 
 /// Base class for all expression nodes.
@@ -128,6 +130,8 @@ public:
   ExprAST *getInitVal() { return initVal.get(); }
 
   const VarType &getType() { return type; }
+
+  void setPrecision(const VarPrecision p) { type.var_precision = p; }
 
   /// LLVM style RTTI
   static bool classof(const ExprAST *c) { return c->getKind() == Expr_VarDecl; }

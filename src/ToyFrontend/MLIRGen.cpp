@@ -54,16 +54,42 @@ private:
   mlir::Type getType(llvm::ArrayRef<int64_t> shape) {
     // If the shape is empty, then this type is unranked.
     if (shape.empty())
-      // TODO:
+      // TODO: Need to handle constant type
       return mlir::UnrankedTensorType::get(builder.getF64Type());
 
     // Otherwise, we use the given shape.
     return mlir::RankedTensorType::get(shape, builder.getF64Type());
   }
 
+  /// Build a tensor type from a list of shape dimensions.
+  mlir::Type getType(llvm::ArrayRef<int64_t> shape, VarPrecision prec) {
+    mlir::Type elemType;
+    switch (prec) {
+    case f64:
+      elemType = builder.getF64Type();
+      break;
+    case f32:
+      elemType = builder.getF32Type();
+      break;
+    case f16:
+      elemType = builder.getF16Type();
+      break;
+    default:
+      theModule.emitError("Unsupported variable precision");
+    }
+    // If the shape is empty, then this type is unranked.
+    if (shape.empty())
+      return mlir::UnrankedTensorType::get(elemType);
+
+    // Otherwise, we use the given shape.
+    return mlir::RankedTensorType::get(shape, elemType);
+  }
+
   /// Build an MLIR type from a Toy AST variable type (forward to the generic
   /// getType above).
-  mlir::Type getType(const VarType &type) { return getType(type.shape); }
+  mlir::Type getType(const VarType &type) {
+    return getType(type.shape, type.var_precision);
+  }
 
   /// Helper conversion for a Toy AST location to an MLIR location.
   mlir::Location loc(const Location &loc) {
@@ -159,7 +185,6 @@ private:
   ///
   mlir::Value mlirGen(LiteralExprAST &lit) {
     auto type = getType(lit.getDims());
-    type.dump();
 
     // The attribute is a vector with a floating point value per element
     // (number) in the array, see `collectData()` below for more details.
@@ -308,7 +333,6 @@ private:
     for (auto &arg : proto.getArgs()) {
       const auto argName = arg->getName();
       auto argType = inputTypeTable.lookup(argName);
-      getType(argType).dump();
       argTypes.push_back(getType(argType));
     }
     auto funcType = builder.getFunctionType(argTypes, std::nullopt);
@@ -363,8 +387,6 @@ private:
         if (auto *vardecl = llvm::dyn_cast<VarDeclExprAST>(expr.get())) {
           const auto varName = vardecl->getName();
           const auto varType = vardecl->getType();
-          llvm::errs() << varType.shape[0] << "\n";
-          llvm::errs() << varType.shape[1] << "\n";
           if (inputTypeTable.count(varName)) {
             emitError(loc(expr->loc()), "error: input variable is redefined");
           }

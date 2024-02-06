@@ -322,8 +322,10 @@ private:
   /// initializer.
   /// decl ::= var identifier [ type ] = expr
   std::unique_ptr<VarDeclExprAST> parseDeclaration() {
-    if (lexer.getCurToken() != tok_var)
+    auto token = lexer.getCurToken();
+    if (token != tok_var && token != tok_var_f32 && token != tok_var_f16) {
       return parseError<VarDeclExprAST>("var", "to begin declaration");
+    }
     auto loc = lexer.getLastLocation();
     lexer.getNextToken(); // eat var
 
@@ -366,11 +368,24 @@ private:
       lexer.consume(Token(';'));
 
     while (lexer.getCurToken() != '}' && lexer.getCurToken() != tok_eof) {
-      if (lexer.getCurToken() == tok_var) {
+      if (lexer.getCurToken() == tok_var_f16) {
+        auto varDecl = parseDeclaration();
+        if (!varDecl)
+          return nullptr;
+        varDecl->setPrecision(f16);
+        exprList->push_back(std::move(varDecl));
+      } else if (lexer.getCurToken() == tok_var_f32) {
+        auto varDecl = parseDeclaration();
+        if (!varDecl)
+          return nullptr;
+        varDecl->setPrecision(f32);
+        exprList->push_back(std::move(varDecl));
+      } else if (lexer.getCurToken() == tok_var) {
         // Variable declaration
         auto varDecl = parseDeclaration();
         if (!varDecl)
           return nullptr;
+        varDecl->setPrecision(f64);
         exprList->push_back(std::move(varDecl));
       } else if (lexer.getCurToken() == tok_return) {
         // Return statement
