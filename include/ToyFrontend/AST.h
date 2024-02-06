@@ -29,6 +29,7 @@ namespace toy {
 /// A variable type with shape information.
 struct VarType {
   std::vector<int64_t> shape;
+  // TODO:
 };
 
 /// Base class for all expression nodes.

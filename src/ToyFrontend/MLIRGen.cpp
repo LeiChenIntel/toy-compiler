@@ -54,6 +54,7 @@ private:
   mlir::Type getType(llvm::ArrayRef<int64_t> shape) {
     // If the shape is empty, then this type is unranked.
     if (shape.empty())
+      // TODO:
       return mlir::UnrankedTensorType::get(builder.getF64Type());
 
     // Otherwise, we use the given shape.
@@ -158,6 +159,7 @@ private:
   ///
   mlir::Value mlirGen(LiteralExprAST &lit) {
     auto type = getType(lit.getDims());
+    type.dump();
 
     // The attribute is a vector with a floating point value per element
     // (number) in the array, see `collectData()` below for more details.
@@ -306,6 +308,7 @@ private:
     for (auto &arg : proto.getArgs()) {
       const auto argName = arg->getName();
       auto argType = inputTypeTable.lookup(argName);
+      getType(argType).dump();
       argTypes.push_back(getType(argType));
     }
     auto funcType = builder.getFunctionType(argTypes, std::nullopt);
@@ -360,6 +363,8 @@ private:
         if (auto *vardecl = llvm::dyn_cast<VarDeclExprAST>(expr.get())) {
           const auto varName = vardecl->getName();
           const auto varType = vardecl->getType();
+          llvm::errs() << varType.shape[0] << "\n";
+          llvm::errs() << varType.shape[1] << "\n";
           if (inputTypeTable.count(varName)) {
             emitError(loc(expr->loc()), "error: input variable is redefined");
           }
