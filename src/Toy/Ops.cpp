@@ -140,6 +140,7 @@ mlir::LogicalResult MatmulOp::verify() {
     mlir::emitError(getLoc(), "MatmulOp: Input element numbers mismatch");
     return mlir::failure();
   }
+  // 矩阵乘法基本约束
   if (lhsShape[1] != rhsShape[0]){
     mlir::emitError(getLoc(),"MatmulOp: Input matrix shape mismatch");
   }

@@ -63,48 +63,11 @@ struct FoldConstantReshapeOptPattern
     return success();
   }
 };
-// Reshape matmul to add 
-struct MatmulReshapeOptPattern
-    : public mlir::OpRewritePattern<MatmulOp>  {
-  /// The "benefit" is used by the framework to order the patterns and process
-  /// them in order of profitability.
-  /// More like an order? benefit=1 is the first pattern to match and rewrite.
-  explicit MatmulReshapeOptPattern(mlir::MLIRContext *context)
-      : OpRewritePattern<MatmulOp>(context, /*benefit=*/1) {}
-
-  mlir::LogicalResult
-  matchAndRewrite(MatmulOp op,
-                  mlir::PatternRewriter &rewriter) const override {
-    auto left_input = op.getOperand(0);
-    auto right_input = op.getOperand(1);
-
-    auto inputType = left_input.getType().dyn_cast<TensorType>();
-    auto inputEleType = inputType.getElementType();
-    auto outputType = op.getResult().getType().dyn_cast<TensorType>();
-    auto outputEleType = outputType.getElementType();
-
-    if (inputEleType != outputEleType) {
-      // Reshape should not support type conversion operation
-      return failure();
-    }
-    // Reconstruct 
-    auto addResults = rewriter.create<AddOp>(op->getLoc(),left_input,right_input);
-    rewriter.replaceOp(op,addResults.getResult());
-    return success();
-
-  }
-};
 
 /// Register our patterns as "canonicalization" patterns on the ReshapeOp so
 /// that they can be picked up by the Canonicalization framework.
 void ReshapeOp::getCanonicalizationPatterns(RewritePatternSet &results,
                                             MLIRContext *context) {
-  // ReshapeReshapeOptPattern和RedundantReshapeOptPattern是啥
   results.add<ReshapeReshapeOptPattern, RedundantReshapeOptPattern,
               FoldConstantReshapeOptPattern>(context);
-}
-
-void MatmulOp::getCanonicalizationPatterns(RewritePatternSet &results,
-                                          MLIRContext *context) {
-  results.add<MatmulReshapeOptPattern>(context);
 }

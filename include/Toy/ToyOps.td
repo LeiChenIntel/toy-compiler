@@ -104,7 +104,6 @@ def MatmulOp : Toy_Op<"matmul", [
   }];
   let hasFolder = 1;
   let hasVerifier = 1;
-  let hasCanonicalizer = 1;
 }
 
 //
