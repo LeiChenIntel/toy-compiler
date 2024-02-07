@@ -140,9 +140,8 @@ mlir::LogicalResult MatmulOp::verify() {
     mlir::emitError(getLoc(), "MatmulOp: Input element numbers mismatch");
     return mlir::failure();
   }
-  // 矩阵乘法基本约束
-  if (lhsShape[1] != rhsShape[0]){
-    mlir::emitError(getLoc(),"MatmulOp: Input matrix shape mismatch");
+  if (lhsShape[1] != rhsShape[0]) {
+    mlir::emitError(getLoc(), "MatmulOp: Input matrix shape mismatch");
   }
   return mlir::success();
 }
@@ -151,26 +150,24 @@ mlir::LogicalResult MatmulOp::inferReturnTypes(
     mlir::MLIRContext *ctx, std::optional<::mlir::Location> location,
     mlir::ValueRange operands, mlir::DictionaryAttr attrs,
     mlir::RegionRange regions,
-    llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes){
+    llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
 
-    MatmulOpAdaptor mul(operands, attrs);
-    const auto inLhsType = mul.getLhs().getType().cast<mlir::ShapedType>();
-    const auto inRhsType = mul.getRhs().getType().cast<mlir::ShapedType>();
+  MatmulOpAdaptor mul(operands, attrs);
+  const auto inLhsType = mul.getLhs().getType().cast<mlir::ShapedType>();
+  const auto inRhsType = mul.getRhs().getType().cast<mlir::ShapedType>();
 
-    mlir::Type outType;
-    // hasRank貌似是判断是否指定了shape的作用
-    if (!inLhsType.hasRank() || !inRhsType.hasRank()){
-      outType = mlir::UnrankedTensorType::get(inLhsType.getElementType());
-    }
-    else{
-      const auto inLhsShape =  inLhsType.getShape();
-      const auto inRhsShape = inRhsType.getShape();
-      const auto resultShape = {inLhsShape[0],inRhsShape[1]};
-      outType = mlir::RankedTensorType::get(resultShape,
-                                      inLhsType.getElementType());
-    }
-    inferredReturnTypes.push_back(outType);
-    return mlir::success();
+  mlir::Type outType;
+  if (!inLhsType.hasRank() || !inRhsType.hasRank()) {
+    outType = mlir::UnrankedTensorType::get(inLhsType.getElementType());
+  } else {
+    const auto inLhsShape = inLhsType.getShape();
+    const auto inRhsShape = inRhsType.getShape();
+    const auto resultShape = {inLhsShape[0], inRhsShape[1]};
+    outType =
+        mlir::RankedTensorType::get(resultShape, inLhsType.getElementType());
+  }
+  inferredReturnTypes.push_back(outType);
+  return mlir::success();
 }
 
 //
