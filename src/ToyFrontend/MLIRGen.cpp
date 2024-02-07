@@ -97,6 +97,8 @@ private:
     switch (binop.getOp()) {
     case '+':
       return builder.create<AddOp>(location, lhs, rhs);
+    case '*':
+      return builder.create<MatmulOp>(location, lhs, rhs);
     case tok_dot_multiplication:
       return builder.create<MulOp>(location, lhs, rhs);
     }
