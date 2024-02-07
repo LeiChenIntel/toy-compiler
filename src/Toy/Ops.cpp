@@ -88,6 +88,87 @@ mlir::LogicalResult AddOp::inferReturnTypes(
   inferredReturnTypes.push_back(outType);
   return mlir::success();
 }
+//
+// MatmulOp
+//
+
+mlir::OpFoldResult MatmulOp::fold(FoldAdaptor adaptor) {
+  const auto lhs = getLhs();
+  const auto rhs = getRhs();
+  if (!lhs.getDefiningOp<toy::ConstantOp>() ||
+      !rhs.getDefiningOp<toy::ConstantOp>()) {
+    return nullptr;
+  }
+
+  ConstantOp lhsOp = lhs.getDefiningOp<toy::ConstantOp>();
+  const auto lhsCstAttr = lhsOp.getValueAttr();
+  const int len = lhsOp.getType().dyn_cast<TensorType>().getNumElements();
+  const auto lhsType = lhsOp.getType();
+  const auto lhsVal = lhsCstAttr.getValues<double>();
+
+  ConstantOp rhsOp = rhs.getDefiningOp<toy::ConstantOp>();
+  const auto rhsCstAttr = rhsOp.getValueAttr();
+  const auto rhsVal = rhsCstAttr.getValues<double>();
+
+  std::vector<double> resVal;
+  for (int i = 0; i < len; i++) {
+    double v = lhsVal[i] * rhsVal[i];
+    resVal.push_back(v);
+  }
+
+  const auto resCstAttr =
+      mlir::DenseElementsAttr::get(lhsType, llvm::ArrayRef(resVal));
+  lhsOp.setValueAttr(resCstAttr);
+  return getLhs();
+}
+
+mlir::LogicalResult MatmulOp::verify() {
+  const auto lhsType = getLhs().getType().dyn_cast<mlir::ShapedType>();
+  const auto rhsType = getRhs().getType().dyn_cast<mlir::ShapedType>();
+  const auto lhsShape = lhsType.getShape();
+  const auto rhsShape = rhsType.getShape();
+
+  if (lhsType.getElementType() != rhsType.getElementType()) {
+    mlir::emitError(getLoc(), "MatmulOp: Input element type mismatch");
+    return mlir::failure();
+  }
+
+  if (!lhsType.hasRank() || !rhsType.hasRank()) {
+    return mlir::success();
+  }
+  if (lhsType.getNumElements() != rhsType.getNumElements()) {
+    mlir::emitError(getLoc(), "MatmulOp: Input element numbers mismatch");
+    return mlir::failure();
+  }
+  if (lhsShape[1] != rhsShape[0]) {
+    mlir::emitError(getLoc(), "MatmulOp: Input matrix shape mismatch");
+  }
+  return mlir::success();
+}
+
+mlir::LogicalResult MatmulOp::inferReturnTypes(
+    mlir::MLIRContext *ctx, std::optional<::mlir::Location> location,
+    mlir::ValueRange operands, mlir::DictionaryAttr attrs,
+    mlir::RegionRange regions,
+    llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
+
+  MatmulOpAdaptor mul(operands, attrs);
+  const auto inLhsType = mul.getLhs().getType().cast<mlir::ShapedType>();
+  const auto inRhsType = mul.getRhs().getType().cast<mlir::ShapedType>();
+
+  mlir::Type outType;
+  if (!inLhsType.hasRank() || !inRhsType.hasRank()) {
+    outType = mlir::UnrankedTensorType::get(inLhsType.getElementType());
+  } else {
+    const auto inLhsShape = inLhsType.getShape();
+    const auto inRhsShape = inRhsType.getShape();
+    const auto resultShape = {inLhsShape[0], inRhsShape[1]};
+    outType =
+        mlir::RankedTensorType::get(resultShape, inLhsType.getElementType());
+  }
+  inferredReturnTypes.push_back(outType);
+  return mlir::success();
+}
 
 //
 // MulOp

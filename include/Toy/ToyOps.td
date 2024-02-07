@@ -83,6 +83,30 @@ def AddOp : Toy_Op<"add", [
 }
 
 //
+// MatmulOp
+//
+
+def MatmulOp : Toy_Op<"matmul", [
+  Pure,
+  InferTypeOpInterface,
+  DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>
+  ]>{
+  let summary = "matrix multiplication";
+
+  let description = [{
+      Toy matrix multiplication.
+  }];
+
+  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$lhs, AnyTypeOf<[F64Tensor, F64MemRef]>:$rhs);
+  let results = (outs AnyTypeOf<[F64Tensor, F64MemRef]>:$output);
+  let assemblyFormat = [{
+    `(` operands `)` attr-dict `:` type(operands) `->` type(results)
+  }];
+  let hasFolder = 1;
+  let hasVerifier = 1;
+}
+
+//
 // MulOp
 //
 
