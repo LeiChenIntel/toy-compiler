@@ -27,3 +27,15 @@ elseif(UNIX)
 endif()
 target_link_libraries(benchmark-add-tensors PRIVATE AddTensors8192)
 install(TARGETS benchmark-add-tensors RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
+
+if(UNIX AND ENABLE_MATMUL_BENCHMARKS)
+    # Need to add OpenBLAS library path to CMAKE_PREFIX_PATH
+    # i.e., /usr/lib/x86_64-linux-gnu/openblas-pthread/cmake/openblas
+    message(STATUS "Enable matrix multiplication benchmarks")
+    find_package(OpenBLAS CONFIG REQUIRED)
+    add_executable(benchmark-mat-mul benchmark-mat-mul.cpp)
+    set(CMAKE_CXX_FLAGS "-pthread")
+    target_include_directories(benchmark-mat-mul PRIVATE ${OpenBLAS_INCLUDE_DIRS})
+    target_link_libraries(benchmark-mat-mul PRIVATE libopenblas.a)
+    install(TARGETS benchmark-mat-mul RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
+endif()
