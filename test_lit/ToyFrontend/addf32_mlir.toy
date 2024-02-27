@@ -1,0 +1,29 @@
+# RUN: toy-translate %s -emit=mlir 2>&1 | FileCheck %s
+
+def funcInputs() {
+  varf32 a<2, 3> = [0];
+  varf32 b<2, 3> = [0];
+}
+
+def add_f32_param_input(a, b) {
+  var c = a + b;
+  print(c);
+  # CHECK-LABEL: toy.func @add_f32_param_input(%arg0: tensor<2x3xf32>, %arg1: tensor<2x3xf32>) {
+  # CHECK-NEXT:    %0 = toy.add(%arg0, %arg1) : tensor<2x3xf32>, tensor<2x3xf32> -> tensor<2x3xf32>
+  # CHECK-NEXT:    toy.print(%0) : tensor<2x3xf32>
+  # CHECK-NEXT:    toy.return
+  # CHECK-NEXT:  }
+}
+
+# Need convert operation to enable these cases
+#def add_f32_param_input_no_shape(a, d) {
+#  var c = a + d;
+#  print(c);
+#}
+
+#def add_f32_const() {
+#  varf32 a1<2, 3> = [1, 2, 3, 4, 5, 6];
+#  varf32 b1<2, 3> = [1, 2, 3, 4, 5, 6];
+#  var c = a1 + b1;
+#  print(c);
+#}
