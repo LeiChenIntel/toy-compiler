@@ -9,7 +9,8 @@ reconstruction:
 
 * MLIR/LLVM project is added as a third party package using `find_package` in the CMakeLists. This makes Toy
   Compiler an independent project but not joinly built with MLIR.
-* The project directories are re-designed by taking [Triton](https://github.com/openai/triton) as a reference. This makes
+* The project directories are re-designed by taking [Triton](https://github.com/openai/triton) as a reference. This
+  makes
   the project structure much clearer and easier for further extension.
 * .gitignore and .clang-format are added to make the Toy from the tutorial to a real project.
 
@@ -41,7 +42,7 @@ For Linux platform, build the project by
 ```bash
 mkdir $TOY_COMPILER_HOME_DIR/build-x86_64
 cd $TOY_COMPILER_HOME_DIR/build-x86_64
-cmake -D CMAKE_PREFIX_PATH=$LLVM_HOME_DIR/build/lib/cmake/mlir ..
+cmake -D CMAKE_PREFIX_PATH=$LLVM_HOME_DIR/build/lib/cmake/mlir -D CMAKE_BUILD_TYPE=Release ..
 make -j${nproc}
 ```
 
@@ -61,7 +62,11 @@ cmake --build . --target install
 
 Other CMake options:
 
-`-DENABLE_TOY_BENCHMARKS`: Enable benchmarks. Compare the results with loop and AVX instructions. Need AVX support and release build type.
+`-DENABLE_TOY_BENCHMARKS`: Enable benchmarks. Compare the results with loop and AVX instructions. Need AVX support and
+release build type. Default value ON.
+
+`-DENABLE_MATMUL_BENCHMARKS`: Enable matrix multiplication benchmark. Need to install OpenBLAS library. Only supported
+on Ubuntu. Default value OFF.
 
 ### How to run the target
 
@@ -70,14 +75,15 @@ Other CMake options:
 **toy-opt** is designed to test single pass lit. File name for IR and pass name are necessary to run toy-opt.
 
 Here is an example to run ConvertToyToMid pass by toy-opy,
+
 ```bash
-toy-opt.exe const_fold.mlir -convert-toy-to-mid
+./toy-opt toy_to_mid.mlir -convert-toy-to-mid
 ```
 
 More usage can be found by running,
 
 ```bash
-toy-opt.exe -h
+./toy-opt -h
 ```
 
 #### toy-translate
@@ -94,8 +100,9 @@ Options:
 -lower-pat: Choose loop or vectorization during the lowering, i.e., loop, vector.
 
 Here is an example to dump MidIR by toy-translate,
+
 ```bash
-toy-translate.exe add_mlir.toy -emit=mlir-mid -opt
+./toy-translate add_mlir.toy -emit=mlir-mid -opt
 ```
 
 #### LIT test

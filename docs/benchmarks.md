@@ -10,5 +10,5 @@ Note that this benchmark needs AVX2 support in the target machine and build type
 It can be run directly by
 
 ```bash
-benchmark-add-tensors.exe
+./benchmark-add-tensors
 ```

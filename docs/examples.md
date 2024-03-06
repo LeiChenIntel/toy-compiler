@@ -7,7 +7,7 @@ This is the example to add two integers and return the result. C and C++ API are
 It can be run directly by
 
 ```bash
-add-values.exe
+./add-values
 ```
 
 Then logs are dumped as
@@ -44,14 +44,17 @@ def add_tensors(a, b, c) {
 It can be run by
 
 ```bash
-add-tensors.exe example.toy --lower-pat=loop
+./add-tensors example.toy --lower-pat=loop
 ```
+
 or enabling a vectorization optimization as
+
 ```bash
-add-tensors.exe example.toy --lower-pat=vector
+./add-tensors example.toy --lower-pat=vector
 ```
 
 The output result is
+
 ```text
 3.000000 5.000000 7.000000
 ```
@@ -59,11 +62,13 @@ The output result is
 Note that although the example has a name `add-tensors`, it is more general as it named.
 If the addition operation is changed to multiplication operation. It works.
 With an operation,
+
 ```text
 var d = a .* b;
 ```
 
 The result can be
+
 ```text
 0.000000 4.000000 10.000000
 ```
