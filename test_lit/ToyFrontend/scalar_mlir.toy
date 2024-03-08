@@ -1,7 +1,7 @@
 # RUN: toy-translate %s -emit=mlir 2>&1 | FileCheck %s
 
 def main() {
-  var a<2, 2> = 5.5;
+  varf64 a<2, 2> = 5.5;
   print(a);
 }
 

@@ -40,10 +40,10 @@ def ReshapeOp : Toy_Op<"reshape", [Pure]> {
       Toy Reshape Operation.
   }];
 
-  let arguments = (ins F64Tensor:$input);
+  let arguments = (ins AnyRankedTensor:$input);
 
   // We expect that the reshape operation returns a statically shaped tensor.
-  let results = (outs StaticShapeTensorOf<[F64]>:$output);
+  let results = (outs StaticShapeTensorOf<[AnyType]>:$output);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
@@ -70,8 +70,8 @@ def AddOp : Toy_Op<"add", [
       Toy Add Operation.
   }];
 
-  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$lhs, AnyTypeOf<[F64Tensor, F64MemRef]>:$rhs);
-  let results = (outs AnyTypeOf<[F64Tensor, F64MemRef]>:$output);
+  let arguments = (ins AnyTypeOf<[AnyMemRef, AnyTensor]>:$lhs, AnyTypeOf<[AnyMemRef, AnyTensor]>:$rhs);
+  let results = (outs AnyTypeOf<[AnyMemRef, AnyTensor]>:$output);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
@@ -121,8 +121,8 @@ def MulOp : Toy_Op<"mul", [
       Toy Element-wise Multiplication Operation.
   }];
 
-  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$lhs, AnyTypeOf<[F64Tensor, F64MemRef]>:$rhs);
-  let results = (outs AnyTypeOf<[F64Tensor, F64MemRef]>:$output);
+  let arguments = (ins AnyTypeOf<[AnyMemRef, AnyTensor]>:$lhs, AnyTypeOf<[AnyMemRef, AnyTensor]>:$rhs);
+  let results = (outs AnyTypeOf<[AnyMemRef, AnyTensor]>:$output);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
@@ -143,7 +143,7 @@ def StoreOp : Toy_Op<"store"> {
       Toy Store Operation.
   }];
 
-  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$valToStore, AnyTypeOf<[F64Tensor, F64MemRef]>:$memref);
+  let arguments = (ins AnyTypeOf<[AnyMemRef, AnyRankedTensor]>:$valToStore, AnyTypeOf<[AnyMemRef, AnyRankedTensor]>:$memref);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands)
@@ -162,7 +162,7 @@ def PrintOp : Toy_Op<"print"> {
   }];
 
   // In lowering IR, toy.print has MemRef inputs
-  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$input);
+  let arguments = (ins AnyTypeOf<[AnyMemRef, AnyTensor]>:$input);
 
   let assemblyFormat = [{
     `(` $input `)` attr-dict `:` type($input)
@@ -219,7 +219,7 @@ def ReturnOp : Toy_Op<"return", [
       Toy Return Operation.
   }];
 
-  let arguments = (ins Variadic<AnyTypeOf<[F64Tensor, F64MemRef]>>:$input);
+  let arguments = (ins Variadic<AnyTypeOf<[AnyMemRef, AnyRankedTensor]>>:$input);
 
   let assemblyFormat = [{
     (`(` $input^ `)` type($input))? attr-dict

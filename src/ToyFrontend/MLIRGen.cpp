@@ -54,15 +54,45 @@ private:
   mlir::Type getType(llvm::ArrayRef<int64_t> shape) {
     // If the shape is empty, then this type is unranked.
     if (shape.empty())
+      // TODO: Need to handle constant type
       return mlir::UnrankedTensorType::get(builder.getF64Type());
 
     // Otherwise, we use the given shape.
     return mlir::RankedTensorType::get(shape, builder.getF64Type());
   }
 
+  /// Build a tensor type from a list of shape dimensions.
+  mlir::Type getType(llvm::ArrayRef<int64_t> shape, VarPrecision prec) {
+    mlir::Type elemType;
+    switch (prec) {
+    case f64:
+      elemType = builder.getF64Type();
+      break;
+    case f32:
+      elemType = builder.getF32Type();
+      break;
+    case f16:
+      elemType = builder.getF16Type();
+      break;
+    case bf16:
+      elemType = builder.getBF16Type();
+      break;
+    default:
+      theModule.emitError("Unsupported variable precision");
+    }
+    // If the shape is empty, then this type is unranked.
+    if (shape.empty())
+      return mlir::UnrankedTensorType::get(elemType);
+
+    // Otherwise, we use the given shape.
+    return mlir::RankedTensorType::get(shape, elemType);
+  }
+
   /// Build an MLIR type from a Toy AST variable type (forward to the generic
   /// getType above).
-  mlir::Type getType(const VarType &type) { return getType(type.shape); }
+  mlir::Type getType(const VarType &type) {
+    return getType(type.shape, type.var_precision);
+  }
 
   /// Helper conversion for a Toy AST location to an MLIR location.
   mlir::Location loc(const Location &loc) {
@@ -287,6 +317,8 @@ private:
       value = builder.create<ReshapeOp>(loc(vardecl.loc()),
                                         getType(vardecl.getType()), value);
     }
+    // TODO: Check if value is ConstantOp and change type if precision is
+    // mismatch
 
     // Register the value in the symbol table.
     if (failed(declare(vardecl.getName(), value)))

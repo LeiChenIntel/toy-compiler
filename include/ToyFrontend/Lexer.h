@@ -41,15 +41,18 @@ enum Token : int {
 
   // commands
   tok_return = -2,
-  tok_var = -3,
-  tok_def = -4,
+  tok_var_f64 = -3,
+  tok_var_f32 = -4,
+  tok_var_f16 = -5,
+  tok_var_bf16 = -6,
+  tok_def = -7,
 
   // primary
-  tok_identifier = -5,
-  tok_number = -6,
+  tok_identifier = -17,
+  tok_number = -18,
 
   // special operation, such as '.*'
-  tok_dot_multiplication = -7,
+  tok_dot_multiplication = -19,
 };
 
 /// The Lexer is an abstract base class providing all the facilities that the
@@ -147,8 +150,14 @@ private:
         return tok_return;
       if (identifierStr == "def")
         return tok_def;
-      if (identifierStr == "var")
-        return tok_var;
+      if (identifierStr == "varf64")
+        return tok_var_f64;
+      if (identifierStr == "varf32")
+        return tok_var_f32;
+      if (identifierStr == "varf16")
+        return tok_var_f16;
+      if (identifierStr == "varbf16")
+        return tok_var_bf16;
       return tok_identifier;
     }
 
