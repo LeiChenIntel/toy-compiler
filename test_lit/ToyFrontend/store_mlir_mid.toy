@@ -1,13 +1,13 @@
 # RUN: toy-translate %s -emit=mlir-mid 2>&1 | FileCheck %s
 
 def funcInputs() {
-  var a<3> = [1, 2, 3];
-  var b<3> = [1, 2, 3];
-  var c<3> = [0, 0, 0];
+  varf64 a<3> = [0];
+  varf64 b<3> = [0];
+  varf64 c<3> = [0];
 }
 
 def store_to_input_mid(a, b, c) {
-  var d = a + b;
+  varf64 d = a + b;
   store(d, c);
   return;
   # CHECK-LABEL: func.func @store_to_input_mid(%arg0: memref<3xf64>, %arg1: memref<3xf64>, %arg2: memref<3xf64>) {

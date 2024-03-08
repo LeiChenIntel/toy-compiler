@@ -1,8 +1,8 @@
 # RUN: toy-translate %s -emit=mlir 2>&1 | FileCheck %s
 
 def funcInputs() {
-  var a<2, 3> = [1, 2, 3, 4, 5, 6];
-  var b<2, 3> = [0, 0, 0, 0, 0, 0];
+  varf64 a<2, 3> = [0];
+  varf64 b<2, 3> = [0];
 }
 
 def store_to_input(a, b) {

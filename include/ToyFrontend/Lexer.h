@@ -41,7 +41,7 @@ enum Token : int {
 
   // commands
   tok_return = -2,
-  tok_var = -3,
+  tok_var_f64 = -3,
   tok_var_f32 = -4,
   tok_var_f16 = -5,
   tok_var_bf16 = -6,
@@ -150,8 +150,8 @@ private:
         return tok_return;
       if (identifierStr == "def")
         return tok_def;
-      if (identifierStr == "var")
-        return tok_var;
+      if (identifierStr == "varf64")
+        return tok_var_f64;
       if (identifierStr == "varf32")
         return tok_var_f32;
       if (identifierStr == "varf16")

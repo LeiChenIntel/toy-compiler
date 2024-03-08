@@ -1,8 +1,8 @@
 # RUN: toy-translate %s -emit=mlir 2>&1 | FileCheck %s
 
 def funcInputs() {
-  var a_f64<2, 3> = [0];
-  var b_f64<2, 3> = [0];
+  varf64 a_f64<2, 3> = [0];
+  varf64 b_f64<2, 3> = [0];
   varf32 a_f32<2, 3> = [0];
   varf32 b_f32<2, 3> = [0];
   varf16 a_f16<2, 3> = [0];
@@ -12,7 +12,7 @@ def funcInputs() {
 }
 
 def add_param_input(a_f64, b_f64) {
-  var c = a_f64 + b_f64;
+  varf64 c = a_f64 + b_f64;
   print(c);
   # CHECK-LABEL: toy.func @add_param_input(%arg0: tensor<2x3xf64>, %arg1: tensor<2x3xf64>) {
   # CHECK-NEXT:    [[VAL_0:%.*]] = toy.add(%arg0, %arg1) : tensor<2x3xf64>, tensor<2x3xf64> -> tensor<2x3xf64>
@@ -22,7 +22,7 @@ def add_param_input(a_f64, b_f64) {
 }
 
 def add_param_input_no_shape(a_f64, d_f64) {
-  var c = a_f64 + d_f64;
+  varf64 c = a_f64 + d_f64;
   print(c);
   # CHECK-LABEL: toy.func @add_param_input_no_shape(%arg0: tensor<2x3xf64>, %arg1: tensor<*xf64>) {
   # CHECK-NEXT:    [[VAL_0:%.*]] = toy.add(%arg0, %arg1) : tensor<2x3xf64>, tensor<*xf64> -> tensor<*xf64>
@@ -32,9 +32,9 @@ def add_param_input_no_shape(a_f64, d_f64) {
 }
 
 def add_const() {
-  var a<2, 3> = [1, 2, 3, 4, 5, 6];
-  var b<2, 3> = [1, 2, 3, 4, 5, 6];
-  var c = a + b;
+  varf64 a<2, 3> = [1, 2, 3, 4, 5, 6];
+  varf64 b<2, 3> = [1, 2, 3, 4, 5, 6];
+  varf64 c = a + b;
   print(c);
   # CHECK-LABEL: toy.func @add_const() {
   # CHECK-NEXT:    [[VAL_0:%.*]] = toy.constant {value = dense<[1.000000e+00, 2.000000e+00, 3.000000e+00, 4.000000e+00, 5.000000e+00, 6.000000e+00]> : tensor<6xf64>} : tensor<6xf64>
@@ -48,7 +48,7 @@ def add_const() {
 }
 
 def add_f32_param_input(a_f32, b_f32) {
-  var c = a_f32 + b_f32;
+  varf32 c = a_f32 + b_f32;
   print(c);
   # CHECK-LABEL: toy.func @add_f32_param_input(%arg0: tensor<2x3xf32>, %arg1: tensor<2x3xf32>) {
   # CHECK-NEXT:    %0 = toy.add(%arg0, %arg1) : tensor<2x3xf32>, tensor<2x3xf32> -> tensor<2x3xf32>
@@ -71,7 +71,7 @@ def add_f32_param_input(a_f32, b_f32) {
 #}
 
 def add_f16_param_input(a_f16, b_f16) {
-  var c = a_f16 + b_f16;
+  varf16 c = a_f16 + b_f16;
   print(c);
   # CHECK-LABEL: toy.func @add_f16_param_input(%arg0: tensor<2x3xf16>, %arg1: tensor<2x3xf16>) {
   # CHECK-NEXT:    %0 = toy.add(%arg0, %arg1) : tensor<2x3xf16>, tensor<2x3xf16> -> tensor<2x3xf16>
@@ -81,7 +81,7 @@ def add_f16_param_input(a_f16, b_f16) {
 }
 
 def add_bf16_param_input(a_bf16, b_bf16) {
-  var c = a_bf16 + b_bf16;
+  varbf16 c = a_bf16 + b_bf16;
   print(c);
   # CHECK-LABEL: toy.func @add_bf16_param_input(%arg0: tensor<2x3xbf16>, %arg1: tensor<2x3xbf16>) {
   # CHECK-NEXT:    %0 = toy.add(%arg0, %arg1) : tensor<2x3xbf16>, tensor<2x3xbf16> -> tensor<2x3xbf16>

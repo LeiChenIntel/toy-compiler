@@ -323,7 +323,7 @@ private:
   /// decl ::= var identifier [ type ] = expr
   std::unique_ptr<VarDeclExprAST> parseDeclaration() {
     auto token = lexer.getCurToken();
-    if (token != tok_var && token != tok_var_f32 && token != tok_var_f16 &&
+    if (token != tok_var_f64 && token != tok_var_f32 && token != tok_var_f16 &&
         token != tok_var_bf16) {
       return parseError<VarDeclExprAST>("var", "to begin declaration");
     }
@@ -387,7 +387,7 @@ private:
           return nullptr;
         varDecl->setPrecision(f32);
         exprList->push_back(std::move(varDecl));
-      } else if (lexer.getCurToken() == tok_var) {
+      } else if (lexer.getCurToken() == tok_var_f64) {
         // Variable declaration
         auto varDecl = parseDeclaration();
         if (!varDecl)
