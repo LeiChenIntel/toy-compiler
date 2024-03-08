@@ -26,7 +26,7 @@
 
 namespace toy {
 
-enum VarPrecision { f64, f32, f16 };
+enum VarPrecision { f64, f32, f16, bf16 };
 
 /// A variable type with shape information.
 struct VarType {
