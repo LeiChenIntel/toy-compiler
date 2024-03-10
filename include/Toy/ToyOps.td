@@ -132,6 +132,21 @@ def MulOp : Toy_Op<"mul", [
   let hasVerifier = 1;
 }
 
+def SubOp : Toy_Op<"sub"> {
+  let summary = "element-wise subtraction";
+
+  let description = [{
+      Toy Element-wise Subtraction Operation.
+  }];
+
+  let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs);
+  let results = (outs AnyTensor:$output);
+
+  let assemblyFormat = [{
+    `(` operands `)` attr-dict `:` type(operands) `->` type(results)
+  }];
+}
+
 //
 // StoreOp
 //
