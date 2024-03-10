@@ -1,0 +1,52 @@
+# RUN: toy-translate %s -emit=mlir 2>&1 | FileCheck %s
+
+def funcInputs() {
+  varf64 a_f64<2, 3> = [0];
+  varf64 b_f64<2, 3> = [0];
+  varf32 a_f32<2, 3> = [0];
+  varf32 b_f32<2, 3> = [0];
+  varf16 a_f16<2, 3> = [0];
+  varf16 b_f16<2, 3> = [0];
+  varbf16 a_bf16<2, 3> = [0];
+  varbf16 b_bf16<2, 3> = [0];
+}
+
+def sub_param_input(a_f64, b_f64) {
+  varf64 c = a_f64 - b_f64;
+  print(c);
+  # CHECK-LABEL: toy.func @sub_param_input(%arg0: tensor<2x3xf64>, %arg1: tensor<2x3xf64>) {
+  # CHECK-NEXT:    [[VAL_0:%.*]] = toy.sub(%arg0, %arg1) : tensor<2x3xf64>, tensor<2x3xf64> -> tensor<2x3xf64>
+  # CHECK-NEXT:    toy.print([[VAL_0]]) : tensor<2x3xf64>
+  # CHECK-NEXT:    toy.return
+  # CHECK-NEXT:  }
+}
+
+def sub_f32_param_input(a_f32, b_f32) {
+  varf32 c = a_f32 - b_f32;
+  print(c);
+  # CHECK-LABEL: toy.func @sub_f32_param_input(%arg0: tensor<2x3xf32>, %arg1: tensor<2x3xf32>) {
+  # CHECK-NEXT:    %0 = toy.sub(%arg0, %arg1) : tensor<2x3xf32>, tensor<2x3xf32> -> tensor<2x3xf32>
+  # CHECK-NEXT:    toy.print(%0) : tensor<2x3xf32>
+  # CHECK-NEXT:    toy.return
+  # CHECK-NEXT:  }
+}
+
+def sub_f16_param_input(a_f16, b_f16) {
+  varf16 c = a_f16 - b_f16;
+  print(c);
+  # CHECK-LABEL: toy.func @sub_f16_param_input(%arg0: tensor<2x3xf16>, %arg1: tensor<2x3xf16>) {
+  # CHECK-NEXT:    %0 = toy.sub(%arg0, %arg1) : tensor<2x3xf16>, tensor<2x3xf16> -> tensor<2x3xf16>
+  # CHECK-NEXT:    toy.print(%0) : tensor<2x3xf16>
+  # CHECK-NEXT:    toy.return
+  # CHECK-NEXT:  }
+}
+
+def sub_bf16_param_input(a_bf16, b_bf16) {
+  varbf16 c = a_bf16 - b_bf16;
+  print(c);
+  # CHECK-LABEL: toy.func @sub_bf16_param_input(%arg0: tensor<2x3xbf16>, %arg1: tensor<2x3xbf16>) {
+  # CHECK-NEXT:    %0 = toy.sub(%arg0, %arg1) : tensor<2x3xbf16>, tensor<2x3xbf16> -> tensor<2x3xbf16>
+  # CHECK-NEXT:    toy.print(%0) : tensor<2x3xbf16>
+  # CHECK-NEXT:    toy.return
+  # CHECK-NEXT:  }
+}
