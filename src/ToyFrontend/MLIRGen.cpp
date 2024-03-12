@@ -128,7 +128,7 @@ private:
     case '+':
       return builder.create<AddOp>(location, lhs, rhs);
     case '-':
-      return builder.create<SubOp>(location, lhs.getType(), lhs, rhs);
+      return builder.create<SubOp>(location, lhs, rhs);
     case '*':
       return builder.create<MatmulOp>(location, lhs, rhs);
     case tok_dot_multiplication:

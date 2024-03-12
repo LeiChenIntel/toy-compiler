@@ -132,7 +132,10 @@ def MulOp : Toy_Op<"mul", [
   let hasVerifier = 1;
 }
 
-def SubOp : Toy_Op<"sub"> {
+def SubOp : Toy_Op<"sub", [
+    InferTypeOpInterface,
+    DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>
+]> {
   let summary = "element-wise subtraction";
 
   let description = [{

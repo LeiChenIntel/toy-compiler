@@ -250,6 +250,31 @@ mlir::LogicalResult MulOp::inferReturnTypes(
 }
 
 //
+// SubOp
+//
+
+mlir::LogicalResult SubOp::inferReturnTypes(
+    mlir::MLIRContext *ctx, std::optional<::mlir::Location> location,
+    mlir::ValueRange operands, mlir::DictionaryAttr attrs,
+    mlir::RegionRange regions,
+    llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
+  SubOpAdaptor sub(operands, attrs);
+
+  const auto inLhsType = sub.getLhs().getType().cast<mlir::ShapedType>();
+  const auto inRhsType = sub.getRhs().getType().cast<mlir::ShapedType>();
+
+  mlir::Type outType;
+  if (!inLhsType.hasRank() || !inRhsType.hasRank()) {
+    outType = mlir::UnrankedTensorType::get(inLhsType.getElementType());
+  } else {
+    outType = mlir::RankedTensorType::get(inLhsType.getShape(),
+                                          inLhsType.getElementType());
+  }
+  inferredReturnTypes.push_back(outType);
+  return mlir::success();
+}
+
+//
 // ReshapeOp
 //
 
