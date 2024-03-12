@@ -150,6 +150,7 @@ def SubOp : Toy_Op<"sub", [
   }];
 
   let hasVerifier = 1;
+  let hasFolder = 1;
 }
 
 //
