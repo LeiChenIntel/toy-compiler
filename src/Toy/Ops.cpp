@@ -253,12 +253,36 @@ mlir::LogicalResult MulOp::inferReturnTypes(
 // SubOp
 //
 
+mlir::LogicalResult SubOp::verify() {
+  const auto lhsType = getLhs().getType().dyn_cast<mlir::ShapedType>();
+  const auto rhsType = getRhs().getType().dyn_cast<mlir::ShapedType>();
+
+  if (lhsType.getElementType() != rhsType.getElementType()) {
+    mlir::emitError(getLoc(), "SubOp: Input element type mismatch");
+    return mlir::failure();
+  }
+
+  if (!lhsType.hasRank() || !rhsType.hasRank()) {
+    return mlir::success();
+  }
+  if (lhsType.getNumElements() != rhsType.getNumElements()) {
+    mlir::emitError(getLoc(), "SubOp: Input element numbers mismatch");
+    return mlir::failure();
+  }
+
+  return mlir::success();
+}
+
 mlir::LogicalResult SubOp::inferReturnTypes(
     mlir::MLIRContext *ctx, std::optional<::mlir::Location> location,
     mlir::ValueRange operands, mlir::DictionaryAttr attrs,
     mlir::RegionRange regions,
     llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
+  const auto loc = location.value_or(mlir::UnknownLoc::get(ctx));
   SubOpAdaptor sub(operands, attrs);
+  if (mlir::failed(sub.verify(loc))) {
+    return mlir::failure();
+  }
 
   const auto inLhsType = sub.getLhs().getType().cast<mlir::ShapedType>();
   const auto inRhsType = sub.getRhs().getType().cast<mlir::ShapedType>();

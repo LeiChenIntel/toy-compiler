@@ -148,6 +148,8 @@ def SubOp : Toy_Op<"sub", [
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
   }];
+
+  let hasVerifier = 1;
 }
 
 //
