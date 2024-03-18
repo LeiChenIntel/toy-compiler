@@ -29,6 +29,8 @@ createConvertToyToMidPass(LoweringPatternMode mode);
 /// well as `Affine` and `Std`, to the LLVM dialect for codegen.
 std::unique_ptr<OperationPass<ModuleOp>> createConvertMidToLLVMPass();
 
+std::unique_ptr<OperationPass<ModuleOp>> createConvertToySubToMidPass();
+
 #define GEN_PASS_REGISTRATION
 #include "Conversion/Passes.h.inc"
 

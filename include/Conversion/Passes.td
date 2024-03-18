@@ -3,6 +3,22 @@
 
 include "mlir/Pass/PassBase.td"
 
+def ConvertToySubToMid: Pass<"convert-toy-sub-to-mid", "mlir::ModuleOp"> {
+    let summary = "Convert Toy Sub to Mid Operations";
+    let description = [{
+
+    }];
+    let constructor = "mlir::toy::createConvertToySubToMidPass()";
+
+    let dependentDialects = [
+      "mlir::AffineDialect",
+      "mlir::BuiltinDialect",
+      "mlir::arith::ArithDialect",
+      "mlir::func::FuncDialect",
+      "mlir::memref::MemRefDialect",
+      "mlir::toy::ToyDialect"];
+}
+
 def ConvertToyToMid: Pass<"convert-toy-to-mid", "mlir::ModuleOp"> {
     let summary = "Convert Toy to Mid Operations";
     let description = [{
