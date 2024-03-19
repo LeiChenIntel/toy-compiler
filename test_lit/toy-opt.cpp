@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
   mlir::registerCanonicalizerPass();
   mlir::toy::registerConvertToyToMid();
   mlir::toy::registerConvertMidToLLVM();
+  mlir::toy::registerConvertToySubToMid();
 
   mlir::DialectRegistry registry;
   registry.insert<mlir::toy::ToyDialect, mlir::AffineDialect,

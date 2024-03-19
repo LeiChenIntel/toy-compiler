@@ -8,11 +8,28 @@ using namespace mlir;
 
 namespace {
 class ToySubOpPattern : public OpConversionPattern<toy::SubOp> {
-  // using OpConversionPattern<toy::SubOp>::OpConversionPattern;
+  using OpConversionPattern<toy::SubOp>::OpConversionPattern;
 
   LogicalResult
   matchAndRewrite(toy::SubOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
+    auto loc = op->getLoc();
+    const auto tensorType = (op.getResult().getType().cast<TensorType>());
+
+    mlir::Value memRef = createStoreOpMemRef(op, rewriter);
+
+    SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), /*Value=*/0);
+    SmallVector<int64_t, 4> steps(tensorType.getRank(), /*Value=*/1);
+    const auto upperBounds = tensorType.getShape();
+    buildAffineLoopNest(
+        rewriter, loc, lowerBounds, upperBounds, steps,
+        [&](OpBuilder &nestedBuilder, Location loc, ValueRange loopIvs) {
+          llvm::errs() << "check point\n";
+          loopIvs[0].dump();
+        });
+
+    // replace op with arg2
+    rewriter.replaceOp(op, memRef);
     return success();
   }
 };
