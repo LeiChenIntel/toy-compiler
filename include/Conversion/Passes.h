@@ -55,6 +55,7 @@ static Value createStoreOpMemRef(Operation *op, PatternRewriter &rewriter) {
   auto &blk = op->getParentRegion()->front();
   const auto storeOps = blk.getOps<toy::StoreOp>();
   for (auto op : storeOps) {
+    // If the operation result is stored, return the buffer
     if (opResVal == op.getValToStore()) {
       memRef = op.getMemref();
       isMemAllocated = true;
