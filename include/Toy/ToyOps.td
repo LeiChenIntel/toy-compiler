@@ -142,8 +142,8 @@ def SubOp : Toy_Op<"sub", [
       Toy Element-wise Subtraction Operation.
   }];
 
-  let arguments = (ins AnyTensor:$lhs, AnyTensor:$rhs);
-  let results = (outs AnyTensor:$output);
+  let arguments = (ins AnyTypeOf<[AnyMemRef, AnyTensor]>:$lhs, AnyTypeOf<[AnyMemRef, AnyTensor]>:$rhs);
+  let results = (outs AnyTypeOf<[AnyMemRef, AnyTensor]>:$output);
 
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)

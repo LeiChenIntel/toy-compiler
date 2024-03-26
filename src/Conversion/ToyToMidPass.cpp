@@ -380,6 +380,40 @@ class ToyPrintOpPattern : public OpConversionPattern<toy::PrintOp> {
   }
 };
 
+class ToySubOpPattern : public OpConversionPattern<toy::SubOp> {
+  using OpConversionPattern<toy::SubOp>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(toy::SubOp op, OpAdaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    auto loc = op->getLoc();
+    const auto tensorType = (op.getResult().getType().cast<TensorType>());
+    // const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+
+    mlir::Value memRef = createStoreOpMemRef(op, rewriter);
+
+    SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), /*Value=*/0);
+    SmallVector<int64_t, 4> steps(tensorType.getRank(), /*Value=*/1);
+    const auto upperBounds = tensorType.getShape();
+    buildAffineLoopNest(
+        rewriter, loc, lowerBounds, upperBounds, steps,
+        [&](OpBuilder &builder, Location loc, ValueRange loopIvs) {
+          auto loadedLhs =
+              builder.create<AffineLoadOp>(loc, adaptor.getLhs(), loopIvs);
+          auto loadedRhs =
+              builder.create<AffineLoadOp>(loc, adaptor.getRhs(), loopIvs);
+          Value valueToStore =
+              rewriter.create<arith::SubFOp>(loc, loadedLhs, loadedRhs);
+          builder.create<AffineStoreOp>(loc, valueToStore, memRef, loopIvs);
+        });
+
+    // replace op with arg2.
+    // If op is used later, use values in arg2
+    rewriter.replaceOp(op, memRef);
+    return success();
+  }
+};
+
 //
 // Targets and patterns definition and registration
 //
@@ -420,6 +454,7 @@ public:
     RewritePatternSet patterns(&getContext());
     patterns.add<ToyFuncOpPattern, ToyReturnOpPattern, ToyPrintOpPattern,
                  ToyConstantOpPattern>(&getContext());
+    patterns.add<ToySubOpPattern>(&getContext());
     switch (loweringPatternMode) {
     case toy::LoweringPatternMode::Loop:
       patterns.add<ToyAddPattern, ToyMulPattern>(
@@ -453,42 +488,4 @@ mlir::toy::createConvertToyToMidPass() {
 std::unique_ptr<OperationPass<ModuleOp>>
 mlir::toy::createConvertToyToMidPass(mlir::toy::LoweringPatternMode mode) {
   return std::make_unique<ConvertToyToMid>(mode);
-}
-
-namespace {
-
-class ToySubOpPattern : public OpConversionPattern<toy::SubOp> {
-  using OpConversionPattern<toy::SubOp>::OpConversionPattern;
-
-  LogicalResult
-  matchAndRewrite(toy::SubOp op, OpAdaptor adaptor,
-                  ConversionPatternRewriter &rewriter) const override {
-    return success();
-  }
-};
-
-class ConvertToySubToMid : public ConvertToySubToMidBase<ConvertToySubToMid> {
-public:
-  ConvertToySubToMid() = default;
-  void runOnOperation() override {
-    ConversionTarget target(getContext());
-    // target.addLegalDialect<AffineDialect, BuiltinDialect,
-    // arith::ArithDialect,
-    //                        func::FuncDialect>();
-    target.addIllegalOp<toy::SubOp>();
-
-    RewritePatternSet patterns(&getContext());
-    patterns.add<ToySubOpPattern>(&getContext());
-
-    if (failed(applyPartialConversion(getOperation(), target,
-                                      std::move(patterns)))) {
-      signalPassFailure();
-    }
-  };
-};
-} // namespace
-
-std::unique_ptr<OperationPass<ModuleOp>>
-mlir::toy::createConvertToySubToMidPass() {
-  return std::make_unique<ConvertToySubToMid>();
 }
