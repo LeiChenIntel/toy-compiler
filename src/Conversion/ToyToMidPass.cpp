@@ -456,6 +456,17 @@ mlir::toy::createConvertToyToMidPass(mlir::toy::LoweringPatternMode mode) {
 }
 
 namespace {
+
+class ToySubOpPattern : public OpConversionPattern<toy::SubOp> {
+  using OpConversionPattern<toy::SubOp>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(toy::SubOp op, OpAdaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    return success();
+  }
+};
+
 class ConvertToySubToMid : public ConvertToySubToMidBase<ConvertToySubToMid> {
 public:
   ConvertToySubToMid() = default;
@@ -467,6 +478,7 @@ public:
     target.addIllegalOp<toy::SubOp>();
 
     RewritePatternSet patterns(&getContext());
+    patterns.add<ToySubOpPattern>(&getContext());
 
     if (failed(applyPartialConversion(getOperation(), target,
                                       std::move(patterns)))) {
