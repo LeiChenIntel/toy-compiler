@@ -454,3 +454,16 @@ std::unique_ptr<OperationPass<ModuleOp>>
 mlir::toy::createConvertToyToMidPass(mlir::toy::LoweringPatternMode mode) {
   return std::make_unique<ConvertToyToMid>(mode);
 }
+
+namespace {
+class ConvertToySubToMid : public ConvertToySubToMidBase<ConvertToySubToMid> {
+public:
+  ConvertToySubToMid() = default;
+  void runOnOperation() override{};
+};
+} // namespace
+
+std::unique_ptr<OperationPass<ModuleOp>>
+mlir::toy::createConvertToySubToMidPass() {
+  return std::make_unique<ConvertToySubToMid>();
+}
