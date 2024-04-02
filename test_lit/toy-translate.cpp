@@ -103,6 +103,7 @@ int dumpMLIR(mlir::MLIRContext &ctx,
   if (isLoweringToMid) {
     pm.addPass(
         mlir::toy::createConvertToyToMidPass(binOpeLoweringMode.getValue()));
+    pm.addPass(mlir::toy::createConvertToySubToMidPass());
 
     if (enableOpt) {
       // Add a few cleanups post lowering.

@@ -446,8 +446,10 @@ public:
     target.addIllegalDialect<toy::ToyDialect>();
     target.addDynamicallyLegalOp<toy::PrintOp>([](toy::PrintOp op) {
       return llvm::none_of(op->getOperandTypes(),
-                           [](Type type) { return type.isa<TensorType>(); });
+                           [](Type type) { return type.isa<TensorType>(); }) ||
+             op.getInput().getDefiningOp<toy::SubOp>();
     });
+    target.addLegalOp<toy::SubOp>();
 
     // Now that the conversion target has been defined, we just need to provide
     // the set of patterns that will lower the Toy operations.
@@ -488,4 +490,35 @@ mlir::toy::createConvertToyToMidPass() {
 std::unique_ptr<OperationPass<ModuleOp>>
 mlir::toy::createConvertToyToMidPass(mlir::toy::LoweringPatternMode mode) {
   return std::make_unique<ConvertToyToMid>(mode);
+}
+
+namespace {
+class ConvertToySubToMid : public ConvertToySubToMidBase<ConvertToySubToMid> {
+public:
+  ConvertToySubToMid() = default;
+
+  void runOnOperation() override {
+    ConversionTarget target(getContext());
+    target.addLegalDialect<AffineDialect, BuiltinDialect, arith::ArithDialect,
+                           func::FuncDialect, memref::MemRefDialect>();
+    target.addIllegalOp<toy::SubOp>();
+    target.addDynamicallyLegalOp<toy::PrintOp>([](toy::PrintOp op) {
+      return llvm::none_of(op->getOperandTypes(),
+                           [](Type type) { return type.isa<TensorType>(); });
+    });
+
+    RewritePatternSet patterns(&getContext());
+    patterns.add<ToySubOpPattern, ToyPrintOpPattern>(&getContext());
+
+    if (failed(applyPartialConversion(getOperation(), target,
+                                      std::move(patterns)))) {
+      signalPassFailure();
+    }
+  };
+};
+} // namespace
+
+std::unique_ptr<OperationPass<ModuleOp>>
+mlir::toy::createConvertToySubToMidPass() {
+  return std::make_unique<ConvertToySubToMid>();
 }
