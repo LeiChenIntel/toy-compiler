@@ -29,13 +29,13 @@ An example of `example.toy` can be given by
 
 ```text
 def funcInputs() {
-  var a<3> = [0];
-  var b<3> = [0];
-  var c<3> = [0];
+  varf64 a<3> = [0];
+  varf64 b<3> = [0];
+  varf64 c<3> = [0];
 }
 
 def add_tensors(a, b, c) {
-  var d = a + b;
+  varf64 d = a + b;
   store(d, c);
   return;
 }
