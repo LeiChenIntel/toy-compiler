@@ -15,7 +15,7 @@ def ConvertToyToMid: Pass<"convert-toy-to-mid", "mlir::ModuleOp"> {
     ];
 
     let dependentDialects = [
-      "mlir::AffineDialect",
+      "mlir::affine::AffineDialect",
       "mlir::BuiltinDialect",
       "mlir::arith::ArithDialect",
       "mlir::func::FuncDialect",

@@ -94,14 +94,15 @@ static void lowerOpToLoops(Operation *op, ValueRange operands,
   // Load and store one by one.
   SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), /*Value=*/0);
   SmallVector<int64_t, 4> steps(tensorType.getRank(), /*Value=*/1);
-  buildAffineLoopNest(
+  affine::buildAffineLoopNest(
       rewriter, loc, lowerBounds, tensorType.getShape(), steps,
       [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
         // Call the processing function with the rewriter, the memref operands,
         // and the loop induction variables. This function will return the value
         // to store at the current index.
         Value valueToStore = processIteration(nestedBuilder, operands, ivs);
-        nestedBuilder.create<AffineStoreOp>(loc, valueToStore, memRef, ivs);
+        nestedBuilder.create<affine::AffineStoreOp>(loc, valueToStore, memRef,
+                                                    ivs);
       });
 
   // Replace this operation with the generated alloc.
@@ -235,7 +236,7 @@ public:
         SmallVector<int64_t, 4> lowerBounds(1, 0);
         SmallVector<int64_t, 4> steps(1, 16);
         SmallVector<int64_t, 4> upperBounds(1, 16 * num16f64);
-        buildAffineLoopNest(
+        affine::buildAffineLoopNest(
             rewriter, loc, lowerBounds, upperBounds, steps,
             [&](OpBuilder &nestedBuilder, Location loc, ValueRange loopIvs) {
               auto loadedVectorLhs = rewriter.create<vector::LoadOp>(
@@ -279,9 +280,9 @@ public:
 
             // Generate loads for the element of 'lhs' and 'rhs' at the
             // inner loop.
-            auto loadedLhs = builder.create<AffineLoadOp>(
+            auto loadedLhs = builder.create<affine::AffineLoadOp>(
                 loc, binaryAdaptor.getLhs(), loopIvs);
-            auto loadedRhs = builder.create<AffineLoadOp>(
+            auto loadedRhs = builder.create<affine::AffineLoadOp>(
                 loc, binaryAdaptor.getRhs(), loopIvs);
 
             // Create the binary operation performed on the loaded
@@ -374,7 +375,7 @@ class ToyConstantOpPattern : public OpConversionPattern<toy::ConstantOp> {
       // The last dimension is the base case of the recursion, at this point
       // we store the element at the given index.
       if (dimension == valueShape.size()) {
-        rewriter.create<AffineStoreOp>(
+        rewriter.create<affine::AffineStoreOp>(
             loc, rewriter.create<arith::ConstantOp>(loc, *valueIt++), alloc,
             llvm::ArrayRef(indices));
         return;
@@ -459,8 +460,8 @@ class ToyPrintOpPattern : public OpConversionPattern<toy::PrintOp> {
                   ConversionPatternRewriter &rewriter) const override {
     // We don't lower "toy.print" in this pass, but we need to update its
     // operands.
-    rewriter.updateRootInPlace(op,
-                               [&] { op->setOperands(adaptor.getOperands()); });
+    rewriter.modifyOpInPlace(op,
+                             [&] { op->setOperands(adaptor.getOperands()); });
     return success();
   }
 };
@@ -484,9 +485,9 @@ public:
     // We define the specific operations, or dialects, that are legal targets
     // for this lowering. In our case, we are lowering to a combination of the
     // `Affine`, `Arith`, `Func`, and `MemRef` dialects.
-    target.addLegalDialect<AffineDialect, BuiltinDialect, arith::ArithDialect,
-                           func::FuncDialect, memref::MemRefDialect,
-                           vector::VectorDialect>();
+    target.addLegalDialect<affine::AffineDialect, BuiltinDialect,
+                           arith::ArithDialect, func::FuncDialect,
+                           memref::MemRefDialect, vector::VectorDialect>();
 
     // We also define the Toy dialect as Illegal so that the conversion will
     // fail if any of these operations are *not* converted. Given that we

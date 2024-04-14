@@ -2,7 +2,7 @@
 #define TOY_OPS_TD
 
 include "Toy/ToyDialect.td"
-include "mlir/IR/FunctionInterfaces.td"
+include "mlir/Interfaces/FunctionInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 
@@ -196,9 +196,11 @@ def FuncOp : Toy_Op<"func", [
   >];
 
   // getArgumentTypes and getResultTypes should be defined in FunctionOpInterface
+  // getCallableRegion is needed in CallInterfaces
   let extraClassDeclaration = [{
     ArrayRef<Type> getArgumentTypes() { return getFunctionType().getInputs(); }
     ArrayRef<Type> getResultTypes() { return getFunctionType().getResults(); }
+    Region *getCallableRegion() { return &getBody(); }
   }];
   // If 'hasCustomAssemblyFormat' is set as ture, need to define print/parse function
   // in the source file. Or define 'assemblyFormat' to format IR.

@@ -16,6 +16,7 @@
 #include <mlir/Parser/Parser.h>
 #include <mlir/Pass/Pass.h>
 #include <mlir/Pass/PassManager.h>
+#include <mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 
 #include <stdio.h>
@@ -45,10 +46,11 @@ void testAddValuesCAPI() {
   MlirPassManager pm = mlirPassManagerCreate(ctx);
   MlirOpPassManager opm = mlirPassManagerGetNestedUnder(
       pm, mlirStringRefCreateFromCString("func.func"));
-  mlirPassManagerAddOwnedPass(pm, mlirCreateConversionConvertFuncToLLVM());
+  mlirPassManagerAddOwnedPass(pm, mlirCreateConversionConvertFuncToLLVMPass());
   mlirOpPassManagerAddOwnedPass(
       opm, mlirCreateConversionArithToLLVMConversionPass());
-  MlirLogicalResult status = mlirPassManagerRun(pm, module);
+  MlirLogicalResult status =
+      mlirPassManagerRunOnOp(pm, mlirModuleGetOperation(module));
   if (mlirLogicalResultIsFailure(status)) {
     fprintf(stderr, "Unexpected failure running pass pipeline\n");
     exit(2);
@@ -86,6 +88,7 @@ void testAddValuesCAPI() {
 void testAddValuesCPP() {
   // Register dialects, translations
   mlir::DialectRegistry registry;
+  mlir::registerBuiltinDialectTranslation(registry);
   mlir::registerLLVMDialectTranslation(registry);
   registry.insert<mlir::arith::ArithDialect, mlir::BuiltinDialect,
                   mlir::func::FuncDialect, mlir::memref::MemRefDialect,
@@ -108,7 +111,7 @@ void testAddValuesCPP() {
   // Register and run passes
   // Lower to LLVM IR
   mlir::PassManager pm(module->getContext());
-  pm.addPass(mlir::createMemRefToLLVMConversionPass());
+  pm.addPass(mlir::createFinalizeMemRefToLLVMConversionPass());
   pm.addNestedPass<mlir::func::FuncOp>(mlir::createArithToLLVMConversionPass());
   pm.addPass(mlir::createConvertFuncToLLVMPass());
   pm.addPass(mlir::createReconcileUnrealizedCastsPass());
