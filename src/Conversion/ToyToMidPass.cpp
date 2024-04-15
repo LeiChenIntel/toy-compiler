@@ -108,6 +108,60 @@ static void lowerOpToLoops(Operation *op, ValueRange operands,
   rewriter.replaceOp(op, memRef);
 }
 
+static void lowerMatmulOpToLoops(Operation *op, ValueRange operands,
+                                 PatternRewriter &rewriter,
+                                 LoopIterationFn processIteration) {
+  auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+  auto loc = op->getLoc();
+  if (op->getResults().size() != 1) {
+    emitError(loc, "Only support operation with 1 result");
+  }
+  mlir::Value memRef = createStoreOpMemRef(op, rewriter);
+  // Determines the lower bound and step size of the loop
+  SmallVector<int64_t, 4> lowerBounds(tensorType.getRank(), /*Value=*/0);
+  SmallVector<int64_t, 4> steps(tensorType.getRank(), /*Value=*/1);
+  /* Take matrix multiplication A[i,j]xB[j,k]->C[i,k] as an example
+     Next, get the dimension hidden in the matrix multiplication process,
+    that is, the column j of the first matrix or the row j of the second
+    maFtrix */
+  auto hiddenDim = op->getOperand(0).getType().cast<ShapedType>().getShape()[1];
+  SmallVector<int64_t, 1> dim;
+  dim.push_back(hiddenDim);
+  /* The outermost layer is a double loop, and the IVS can get the I and K, and
+   the outer layer is the I cycle, and the inner layer is the K cycle*/
+  buildAffineLoopNest(
+      rewriter, loc, lowerBounds, tensorType.getShape(), steps,
+      [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
+        // Get the i and k of the current loop
+        SmallVector<mlir::Value, 3> curIndex;
+        curIndex.push_back(ivs[0]);
+        curIndex.push_back(ivs[1]);
+        ValueRange ResultIndex = ivs;
+        // Do an inner loop on the J dimension
+        SmallVector<int64_t, 4> lowerBounds(1, /*Value=*/0);
+        SmallVector<int64_t, 4> steps(1, /*Value=*/1);
+        buildAffineLoopNest(
+            rewriter, loc, lowerBounds, dim, steps,
+            [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
+              // Get the current j
+              curIndex.push_back(ivs[0]);
+              // Get the result of multiplication
+              Value valueAfterMul =
+                  processIteration(nestedBuilder, operands, curIndex);
+              // accumulate
+              auto valueAfterAdd =
+                  nestedBuilder.create<AffineLoadOp>(loc, memRef, ResultIndex);
+              Value valueToStore = nestedBuilder.create<arith::AddFOp>(
+                  loc, valueAfterMul, valueAfterAdd);
+              nestedBuilder.create<AffineStoreOp>(loc, valueToStore, memRef,
+                                                  ResultIndex);
+            });
+      });
+
+  // Replace this operation with the generated alloc.
+  rewriter.replaceOp(op, memRef);
+}
+
 //
 // Toy patterns
 //
@@ -244,6 +298,37 @@ public:
 private:
   enum toy::LoweringPatternMode mode;
 };
+
+class ToyMatmulPattern : public OpConversionPattern<toy::MatmulOp> {
+  using OpConversionPattern<toy::MatmulOp>::OpConversionPattern;
+
+  LogicalResult
+  matchAndRewrite(toy::MatmulOp op, OpAdaptor adaptor,
+                  ConversionPatternRewriter &rewriter) const override {
+    auto loc = op->getLoc();
+    lowerMatmulOpToLoops(
+        op, adaptor.getOperands(), rewriter,
+        [loc, &adaptor](OpBuilder &builder, ValueRange memRefOperands,
+                        ValueRange loopIvs) {
+          // typename toy::MatmulOpAdaptor adaptor(memRefOperands);
+          // Get from loopIvs to i, j, k
+          SmallVector<mlir::Value, 2> LhsIndex;
+          SmallVector<mlir::Value, 2> RhsIndex;
+          LhsIndex.push_back(loopIvs[0]);
+          LhsIndex.push_back(loopIvs[2]);
+          RhsIndex.push_back(loopIvs[1]);
+          RhsIndex.push_back(loopIvs[2]);
+          // load two numbers to do multiplication
+          auto loadedLhs =
+              builder.create<AffineLoadOp>(loc, adaptor.getLhs(), LhsIndex);
+          auto loadedRhs =
+              builder.create<AffineLoadOp>(loc, adaptor.getRhs(), RhsIndex);
+          return builder.create<arith::MulFOp>(loc, loadedLhs, loadedRhs);
+        });
+    return mlir::success();
+  }
+};
+
 using ToyAddPattern = ToyBinaryPattern<toy::AddOp, arith::AddFOp>;
 using ToyMulPattern = ToyBinaryPattern<toy::MulOp, arith::MulFOp>;
 
@@ -420,6 +505,7 @@ public:
     RewritePatternSet patterns(&getContext());
     patterns.add<ToyFuncOpPattern, ToyReturnOpPattern, ToyPrintOpPattern,
                  ToyConstantOpPattern>(&getContext());
+    patterns.add<ToyMatmulPattern>(&getContext());
     switch (loweringPatternMode) {
     case toy::LoweringPatternMode::Loop:
       patterns.add<ToyAddPattern, ToyMulPattern>(

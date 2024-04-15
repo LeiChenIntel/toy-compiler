@@ -97,8 +97,8 @@ def MatmulOp : Toy_Op<"matmul", [
       Toy matrix multiplication.
   }];
 
-  let arguments = (ins AnyTypeOf<[F64Tensor, F64MemRef]>:$lhs, AnyTypeOf<[F64Tensor, F64MemRef]>:$rhs);
-  let results = (outs AnyTypeOf<[F64Tensor, F64MemRef]>:$output);
+  let arguments = (ins AnyTypeOf<[AnyMemRef, AnyTensor]>:$lhs, AnyTypeOf<[AnyMemRef, AnyTensor]>:$rhs);
+  let results = (outs AnyTypeOf<[AnyMemRef, AnyTensor]>:$output);
   let assemblyFormat = [{
     `(` operands `)` attr-dict `:` type(operands) `->` type(results)
   }];
