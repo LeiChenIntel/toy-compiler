@@ -1,0 +1,13 @@
+# RUN: toy-translate %s -emit=mlir-mid -opt -lower-pat=vector 2>&1 | FileCheck %s
+
+def funcInputs() {
+  varf64 a<4,4> = [0];
+  varf64 b<4,4> = [0];
+  varf64 c<4,4> = [0];
+}
+
+def matmul(a, b, c) {
+  varf64 d = a * b;
+  store(d, c);
+  return;
+}
