@@ -130,7 +130,7 @@ static void lowerMatmulOpToLoops(Operation *op, ValueRange operands,
   dim.push_back(hiddenDim);
   /* The outermost layer is a double loop, and the IVS can get the I and K, and
    the outer layer is the I cycle, and the inner layer is the K cycle*/
-  buildAffineLoopNest(
+  affine::buildAffineLoopNest(
       rewriter, loc, lowerBounds, tensorType.getShape(), steps,
       [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
         // Get the i and k of the current loop
@@ -141,7 +141,7 @@ static void lowerMatmulOpToLoops(Operation *op, ValueRange operands,
         // Do an inner loop on the J dimension
         SmallVector<int64_t, 4> lowerBounds(1, /*Value=*/0);
         SmallVector<int64_t, 4> steps(1, /*Value=*/1);
-        buildAffineLoopNest(
+        affine::buildAffineLoopNest(
             rewriter, loc, lowerBounds, dim, steps,
             [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
               // Get the current j
@@ -150,12 +150,12 @@ static void lowerMatmulOpToLoops(Operation *op, ValueRange operands,
               Value valueAfterMul =
                   processIteration(nestedBuilder, operands, curIndex);
               // accumulate
-              auto valueAfterAdd =
-                  nestedBuilder.create<AffineLoadOp>(loc, memRef, ResultIndex);
+              auto valueAfterAdd = nestedBuilder.create<affine::AffineLoadOp>(
+                  loc, memRef, ResultIndex);
               Value valueToStore = nestedBuilder.create<arith::AddFOp>(
                   loc, valueAfterMul, valueAfterAdd);
-              nestedBuilder.create<AffineStoreOp>(loc, valueToStore, memRef,
-                                                  ResultIndex);
+              nestedBuilder.create<affine::AffineStoreOp>(loc, valueToStore,
+                                                          memRef, ResultIndex);
             });
       });
 
@@ -320,10 +320,10 @@ class ToyMatmulPattern : public OpConversionPattern<toy::MatmulOp> {
           RhsIndex.push_back(loopIvs[1]);
           RhsIndex.push_back(loopIvs[2]);
           // load two numbers to do multiplication
-          auto loadedLhs =
-              builder.create<AffineLoadOp>(loc, adaptor.getLhs(), LhsIndex);
-          auto loadedRhs =
-              builder.create<AffineLoadOp>(loc, adaptor.getRhs(), RhsIndex);
+          auto loadedLhs = builder.create<affine::AffineLoadOp>(
+              loc, adaptor.getLhs(), LhsIndex);
+          auto loadedRhs = builder.create<affine::AffineLoadOp>(
+              loc, adaptor.getRhs(), RhsIndex);
           return builder.create<arith::MulFOp>(loc, loadedLhs, loadedRhs);
         });
     return mlir::success();
