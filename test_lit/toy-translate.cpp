@@ -4,12 +4,15 @@
 #include "ToyFrontend/Parser.h"
 
 #include <mlir/Dialect/Affine/Passes.h>
+#include <mlir/Dialect/Func/Extensions/AllExtensions.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>
+#include <mlir/Dialect/LLVMIR/Transforms/Passes.h>
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/IR/AsmState.h>
 #include <mlir/IR/MLIRContext.h>
 #include <mlir/Pass/PassManager.h>
+#include <mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
@@ -88,7 +91,8 @@ int dumpMLIR(mlir::MLIRContext &ctx,
   // Add optimization and lowering pass
   mlir::PassManager pm(&ctx);
   // Apply any generic pass manager command line options and run the pipeline.
-  applyPassManagerCLOptions(pm);
+  if (mlir::failed(mlir::applyPassManagerCLOptions(pm)))
+    return 4;
 
   // Check to see what granularity of MLIR we are compiling to.
   bool isLoweringToMid = emitAction >= Action::DumpMLIRMid;
@@ -111,13 +115,17 @@ int dumpMLIR(mlir::MLIRContext &ctx,
       optPM.addPass(mlir::createCSEPass());
 
       // Add Affine optimizations.
-      optPM.addPass(mlir::createLoopFusionPass());
-      optPM.addPass(mlir::createAffineScalarReplacementPass());
+      optPM.addPass(mlir::affine::createLoopFusionPass());
+      optPM.addPass(mlir::affine::createAffineScalarReplacementPass());
     }
   }
 
   if (isLoweringToLLVM) {
     pm.addPass(mlir::toy::createConvertMidToLLVMPass());
+    // This is necessary to have line tables emitted and basic
+    // debugger working. In the future we will add proper debug information
+    // emission directly from our frontend.
+    // pm.addPass(mlir::LLVM::createDIScopeForLLVMFuncOpPass());
   }
 
   if (mlir::failed(pm.run(*module)))
@@ -127,6 +135,7 @@ int dumpMLIR(mlir::MLIRContext &ctx,
 
 int dumpLLVMIR(mlir::ModuleOp module) {
   // Register the translation to LLVM IR with the MLIR context.
+  mlir::registerBuiltinDialectTranslation(*module->getContext());
   mlir::registerLLVMDialectTranslation(*(module->getContext()));
 
   // Convert the module to LLVM IR in a new LLVM IR context.
@@ -140,7 +149,19 @@ int dumpLLVMIR(mlir::ModuleOp module) {
   // Initialize LLVM targets.
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
-  mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
+  // Create target machine and configure the LLVM Module.
+  auto tmBuilderOrError = llvm::orc::JITTargetMachineBuilder::detectHost();
+  if (!tmBuilderOrError) {
+    llvm::errs() << "Could not create JITTargetMachineBuilder\n";
+    return -1;
+  }
+  auto tmOrError = tmBuilderOrError->createTargetMachine();
+  if (!tmOrError) {
+    llvm::errs() << "Could not create TargetMachine\n";
+    return -1;
+  }
+  mlir::ExecutionEngine::setupTargetTripleAndDataLayout(llvmModule.get(),
+                                                        tmOrError.get().get());
 
   /// Optionally run an optimization pipeline over the llvm module.
   auto optPipeline = mlir::makeOptimizingTransformer(
@@ -157,6 +178,7 @@ int dumpLLVMIR(mlir::ModuleOp module) {
 int runJIT(mlir::ModuleOp module) {
   // Register the translation from MLIR to LLVM IR, which must happen before we
   // can JIT-compile.
+  mlir::registerBuiltinDialectTranslation(*module->getContext());
   mlir::registerLLVMDialectTranslation(*(module->getContext()));
 
   // Initialize LLVM targets.
@@ -202,7 +224,10 @@ int main(int argc, char **argv) {
   mlir::registerPassManagerCLOptions();
   cl::ParseCommandLineOptions(argc, argv, "toy compiler\n");
 
-  mlir::MLIRContext context;
+  mlir::DialectRegistry registry;
+  mlir::func::registerAllExtensions(registry);
+
+  mlir::MLIRContext context(registry);
   context.getOrLoadDialect<mlir::toy::ToyDialect>();
   mlir::OwningOpRef<mlir::ModuleOp> module;
 

@@ -1,6 +1,6 @@
 #include "Toy/Dialect.h"
 
-#include <mlir/IR/FunctionImplementation.h>
+#include <mlir/Interfaces/FunctionImplementation.h>
 
 #define GET_OP_CLASSES
 #include "Toy/Ops.cpp.inc"
@@ -67,7 +67,7 @@ mlir::LogicalResult AddOp::verify() {
 mlir::LogicalResult AddOp::inferReturnTypes(
     ::mlir::MLIRContext *ctx, ::std::optional<::mlir::Location> location,
     ::mlir::ValueRange operands, ::mlir::DictionaryAttr attrs,
-    ::mlir::RegionRange regions,
+    ::mlir::OpaqueProperties properties, ::mlir::RegionRange regions,
     ::llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
   const auto loc = location.value_or(mlir::UnknownLoc::get(ctx));
   AddOpAdaptor add(operands, attrs);
@@ -149,7 +149,7 @@ mlir::LogicalResult MatmulOp::verify() {
 mlir::LogicalResult MatmulOp::inferReturnTypes(
     mlir::MLIRContext *ctx, std::optional<::mlir::Location> location,
     mlir::ValueRange operands, mlir::DictionaryAttr attrs,
-    mlir::RegionRange regions,
+    ::mlir::OpaqueProperties properties, mlir::RegionRange regions,
     llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
 
   MatmulOpAdaptor mul(operands, attrs);
@@ -227,7 +227,7 @@ mlir::LogicalResult MulOp::verify() {
 mlir::LogicalResult MulOp::inferReturnTypes(
     mlir::MLIRContext *ctx, std::optional<::mlir::Location> location,
     mlir::ValueRange operands, mlir::DictionaryAttr attrs,
-    mlir::RegionRange regions,
+    ::mlir::OpaqueProperties properties, mlir::RegionRange regions,
     llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
   const auto loc = location.value_or(mlir::UnknownLoc::get(ctx));
   MulOpAdaptor mul(operands, attrs);

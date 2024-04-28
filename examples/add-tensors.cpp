@@ -5,10 +5,12 @@
 #include "ToyFrontend/Parser.h"
 
 #include <mlir/Dialect/Affine/Passes.h>
+#include <mlir/Dialect/Func/Extensions/AllExtensions.h>
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/ExecutionEngine/OptUtils.h>
 #include <mlir/IR/AsmState.h>
 #include <mlir/Pass/PassManager.h>
+#include <mlir/Target/LLVMIR/Dialect/Builtin/BuiltinToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/Target/LLVMIR/Export.h>
 #include <mlir/Transforms/Passes.h>
@@ -41,9 +43,13 @@ std::unique_ptr<toy::ModuleAST> parseInputFile(llvm::StringRef filename) {
 }
 
 int main(int argc, char **argv) {
+  mlir::registerPassManagerCLOptions();
   cl::ParseCommandLineOptions(argc, argv, "toy compiler\n");
 
-  mlir::MLIRContext ctx;
+  mlir::DialectRegistry registry;
+  mlir::func::registerAllExtensions(registry);
+
+  mlir::MLIRContext ctx(registry);
   ctx.getOrLoadDialect<mlir::toy::ToyDialect>();
 
   auto moduleAST = parseInputFile(inputFilename);
@@ -58,7 +64,10 @@ int main(int argc, char **argv) {
   }
 
   mlir::PassManager pm(&ctx);
-  applyPassManagerCLOptions(pm);
+  if (mlir::failed(mlir::applyPassManagerCLOptions(pm))) {
+    llvm::errs() << "Fail to apply pass manager\n";
+    return -1;
+  }
 
   mlir::OpPassManager &optPmToy = pm.nest<mlir::toy::FuncOp>();
   optPmToy.addPass(mlir::createCanonicalizerPass());
@@ -68,15 +77,16 @@ int main(int argc, char **argv) {
   mlir::OpPassManager &optPmFunc = pm.nest<mlir::func::FuncOp>();
   optPmFunc.addPass(mlir::createCanonicalizerPass());
   optPmFunc.addPass(mlir::createCSEPass());
-  optPmFunc.addPass(mlir::createLoopFusionPass());
-  optPmFunc.addPass(mlir::createAffineScalarReplacementPass());
+  optPmFunc.addPass(mlir::affine::createLoopFusionPass());
+  optPmFunc.addPass(mlir::affine::createAffineScalarReplacementPass());
   pm.addPass(mlir::toy::createConvertMidToLLVMPass());
   if (mlir::failed(pm.run(*module))) {
     llvm::errs() << "Fail to run lowering pass to LLVM\n";
     return -1;
   }
 
-  mlir::registerLLVMDialectTranslation(*(module->getContext()));
+  mlir::registerBuiltinDialectTranslation(*module->getContext());
+  mlir::registerLLVMDialectTranslation(*module->getContext());
   llvm::LLVMContext llvmContext;
   auto llvmModule = mlir::translateModuleToLLVMIR(*module, llvmContext);
   if (!llvmModule) {
@@ -87,7 +97,19 @@ int main(int argc, char **argv) {
   // Initialize LLVM targets.
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
-  mlir::ExecutionEngine::setupTargetTriple(llvmModule.get());
+  // Create target machine and configure the LLVM Module.
+  auto tmBuilderOrError = llvm::orc::JITTargetMachineBuilder::detectHost();
+  if (!tmBuilderOrError) {
+    llvm::errs() << "Could not create JITTargetMachineBuilder\n";
+    return -1;
+  }
+  auto tmOrError = tmBuilderOrError->createTargetMachine();
+  if (!tmOrError) {
+    llvm::errs() << "Could not create TargetMachine\n";
+    return -1;
+  }
+  mlir::ExecutionEngine::setupTargetTripleAndDataLayout(llvmModule.get(),
+                                                        tmOrError.get().get());
 
   auto optPipeline = mlir::makeOptimizingTransformer(
       /*optLevel=*/3, /*sizeLevel=*/0,
@@ -132,6 +154,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < 3; i++) {
     printf("%f ", p[i]);
   }
+  printf("\n");
 
   return 0;
 }
