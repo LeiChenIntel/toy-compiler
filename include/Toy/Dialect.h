@@ -7,6 +7,7 @@
 #include <mlir/Interfaces/InferTypeOpInterface.h>
 
 #include "Toy/Dialect.h.inc"
+#include "Toy/ToyInterface.h.inc"
 
 #define GET_OP_CLASSES
 #include "Toy/Ops.h.inc"

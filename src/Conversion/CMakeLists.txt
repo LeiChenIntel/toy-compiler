@@ -4,5 +4,6 @@ add_mlir_conversion_library(
         MidToLLVMPass.cpp
     DEPENDS
     ToyOpsIncGen
+    ToyInterfaceIncGen
     ToyConversionPassIncGen)
 target_include_directories(ToyConversion PUBLIC ${PROJECT_SOURCE_DIR}/include)

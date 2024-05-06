@@ -2,6 +2,7 @@
 #define TOY_OPS_TD
 
 include "Toy/ToyDialect.td"
+include "Toy/ToyInterface.td"
 include "mlir/IR/FunctionInterfaces.td"
 include "mlir/Interfaces/InferTypeOpInterface.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"

@@ -13,4 +13,5 @@ add_mlir_dialect_library(
     PARTIAL_SOURCES_INTENDED
     DEPENDS
         ToyOpsIncGen
-        ToyCombineIncGen)
+        ToyCombineIncGen
+        ToyInterfaceIncGen)
