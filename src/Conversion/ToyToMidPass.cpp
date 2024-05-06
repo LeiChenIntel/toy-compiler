@@ -123,6 +123,11 @@ public:
   matchAndRewrite(Operation *op, ArrayRef<Value> operands,
                   ConversionPatternRewriter &rewriter) const override {
     auto loc = op->getLoc();
+    if (auto addOp = mlir::dyn_cast_or_null<toy::AddOp>(op)) {
+      mlir::emitRemark(loc)
+          << "Byte size of add operation: " << addOp.giveInputOutputByteSize()
+          << "\n";
+    }
     if (mode == toy::LoweringPatternMode::Vector) {
       mlir::Value memRef = createStoreOpMemRef(op, rewriter);
 

@@ -88,6 +88,14 @@ mlir::LogicalResult AddOp::inferReturnTypes(
   inferredReturnTypes.push_back(outType);
   return mlir::success();
 }
+
+int AddOp::giveInputOutputByteSize() {
+  const auto lhsType = getLhs().getType().dyn_cast<mlir::ShapedType>();
+  int32_t byteWidth = lhsType.getElementTypeBitWidth() / 8;
+  int32_t n = lhsType.getNumElements();
+  return 3 * n * byteWidth;
+}
+
 //
 // MatmulOp
 //

@@ -63,7 +63,8 @@ def ReshapeOp : Toy_Op<"reshape", [Pure]> {
 def AddOp : Toy_Op<"add", [
   Pure,
   InferTypeOpInterface,
-  DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>
+  DeclareOpInterfaceMethods<InferTypeOpInterface, ["inferReturnTypes"]>,
+  DeclareOpInterfaceMethods<ToyOpInterface, ["giveInputOutputByteSize"]>
 ]> {
   let summary = "add";
 
