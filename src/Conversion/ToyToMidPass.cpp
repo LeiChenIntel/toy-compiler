@@ -303,31 +303,101 @@ private:
 class ToyMatmulPattern : public OpConversionPattern<toy::MatmulOp> {
   using OpConversionPattern<toy::MatmulOp>::OpConversionPattern;
 
+public:
+  ToyMatmulPattern(MLIRContext *ctx, toy::LoweringPatternMode mode)
+      : OpConversionPattern(ctx), mode(mode) {}
+
   LogicalResult
   matchAndRewrite(toy::MatmulOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
     auto loc = op->getLoc();
-    lowerMatmulOpToLoops(
-        op, adaptor.getOperands(), rewriter,
-        [loc, &adaptor](OpBuilder &builder, ValueRange memRefOperands,
-                        ValueRange loopIvs) {
-          // typename toy::MatmulOpAdaptor adaptor(memRefOperands);
-          // Get from loopIvs to i, j, k
-          SmallVector<mlir::Value, 2> LhsIndex;
-          SmallVector<mlir::Value, 2> RhsIndex;
-          LhsIndex.push_back(loopIvs[0]);
-          LhsIndex.push_back(loopIvs[2]);
-          RhsIndex.push_back(loopIvs[1]);
-          RhsIndex.push_back(loopIvs[2]);
-          // load two numbers to do multiplication
-          auto loadedLhs = builder.create<affine::AffineLoadOp>(
-              loc, adaptor.getLhs(), LhsIndex);
-          auto loadedRhs = builder.create<affine::AffineLoadOp>(
-              loc, adaptor.getRhs(), RhsIndex);
-          return builder.create<arith::MulFOp>(loc, loadedLhs, loadedRhs);
-        });
+    if (mode == toy::LoweringPatternMode::Vector) {
+      mlir::Value memRef = createStoreOpMemRef(op, rewriter);
+
+      const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+      const auto elementType = tensorType.getElementType();
+
+      auto lhsInput = adaptor.getLhs();
+      auto lhsType = lhsInput.getType().template cast<ShapedType>();
+      uint32_t lhsRows = lhsType.getShape()[0];
+      uint32_t lhsCols = lhsType.getShape()[1];
+      if (lhsType.getRank() > 1) {
+        int64_t num = lhsType.getNumElements();
+        auto newlhsType = MemRefType::get({num}, lhsType.getElementType());
+        std::vector<int64_t> newSize = {num};
+        std::vector<int64_t> newStride = {1};
+        lhsInput = rewriter.create<memref::ReinterpretCastOp>(
+            loc, newlhsType, lhsInput, 0, ArrayRef(newSize),
+            ArrayRef(newStride));
+      }
+
+      auto rhsInput = adaptor.getRhs();
+      auto rhsType = rhsInput.getType().template cast<ShapedType>();
+      uint32_t rhsCols = rhsType.getShape()[1];
+      if (rhsType.getRank() > 1) {
+        int64_t num = rhsType.getNumElements();
+        auto newrhsType = MemRefType::get({num}, rhsType.getElementType());
+        std::vector<int64_t> newSize = {num};
+        std::vector<int64_t> newStride = {1};
+        rhsInput = rewriter.create<memref::ReinterpretCastOp>(
+            loc, newrhsType, rhsInput, 0, ArrayRef(newSize),
+            ArrayRef(newStride));
+      }
+
+      if (tensorType.getRank() > 1) {
+        const int64_t length = tensorType.getNumElements();
+        auto memRefType = MemRefType::get({length}, elementType);
+        std::vector<int64_t> newSize = {length};
+        std::vector<int64_t> newStride = {1};
+        memRef = rewriter.create<memref::ReinterpretCastOp>(
+            loc, memRefType, memRef, 0, ArrayRef(newSize), ArrayRef(newStride));
+      }
+
+      auto cst = rewriter.create<arith::ConstantOp>(
+          loc, rewriter.getIndexType(), rewriter.getIndexAttr(0));
+      SmallVector<mlir::Value, 4> memRefIdx(1, cst);
+      const auto lhsVectorType =
+          VectorType::get({lhsRows * lhsCols}, elementType);
+      const auto rhsVectorType =
+          VectorType::get({lhsCols * rhsCols}, elementType);
+      auto loadedLhs = rewriter.create<vector::LoadOp>(loc, lhsVectorType,
+                                                       lhsInput, memRefIdx);
+      auto loadedRhs = rewriter.create<vector::LoadOp>(loc, rhsVectorType,
+                                                       rhsInput, memRefIdx);
+      mlir::Value matmulResult = rewriter.create<vector::MatmulOp>(
+          loc, loadedLhs, loadedRhs, lhsRows, lhsCols, rhsCols);
+      rewriter.create<vector::StoreOp>(loc, matmulResult, memRef, memRefIdx);
+
+      rewriter.replaceOp(op, memRef);
+    } else if (mode == toy::LoweringPatternMode::Loop) {
+      lowerMatmulOpToLoops(
+          op, adaptor.getOperands(), rewriter,
+          [loc, &adaptor](OpBuilder &builder, ValueRange memRefOperands,
+                          ValueRange loopIvs) {
+            // typename toy::MatmulOpAdaptor adaptor(memRefOperands);
+            // Get from loopIvs to i, j, k
+            SmallVector<mlir::Value, 2> LhsIndex;
+            SmallVector<mlir::Value, 2> RhsIndex;
+            LhsIndex.push_back(loopIvs[0]);
+            LhsIndex.push_back(loopIvs[2]);
+            RhsIndex.push_back(loopIvs[1]);
+            RhsIndex.push_back(loopIvs[2]);
+            // load two numbers to do multiplication
+            auto loadedLhs = builder.create<affine::AffineLoadOp>(
+                loc, adaptor.getLhs(), LhsIndex);
+            auto loadedRhs = builder.create<affine::AffineLoadOp>(
+                loc, adaptor.getRhs(), RhsIndex);
+            return builder.create<arith::MulFOp>(loc, loadedLhs, loadedRhs);
+          });
+    } else {
+      emitError(loc, "Unsupported lowering binary pattern");
+      return mlir::failure();
+    }
     return mlir::success();
   }
+
+private:
+  enum toy::LoweringPatternMode mode;
 };
 
 using ToyAddPattern = ToyBinaryPattern<toy::AddOp, arith::AddFOp>;
@@ -506,14 +576,13 @@ public:
     RewritePatternSet patterns(&getContext());
     patterns.add<ToyFuncOpPattern, ToyReturnOpPattern, ToyPrintOpPattern,
                  ToyConstantOpPattern>(&getContext());
-    patterns.add<ToyMatmulPattern>(&getContext());
     switch (loweringPatternMode) {
     case toy::LoweringPatternMode::Loop:
-      patterns.add<ToyAddPattern, ToyMulPattern>(
+      patterns.add<ToyAddPattern, ToyMulPattern, ToyMatmulPattern>(
           &getContext(), toy::LoweringPatternMode::Loop);
       break;
     case toy::LoweringPatternMode::Vector:
-      patterns.add<ToyAddPattern, ToyMulPattern>(
+      patterns.add<ToyAddPattern, ToyMulPattern, ToyMatmulPattern>(
           &getContext(), toy::LoweringPatternMode::Vector);
       break;
     default:

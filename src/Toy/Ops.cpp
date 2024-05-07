@@ -136,10 +136,6 @@ mlir::LogicalResult MatmulOp::verify() {
   if (!lhsType.hasRank() || !rhsType.hasRank()) {
     return mlir::success();
   }
-  if (lhsType.getNumElements() != rhsType.getNumElements()) {
-    mlir::emitError(getLoc(), "MatmulOp: Input element numbers mismatch");
-    return mlir::failure();
-  }
   if (lhsShape[1] != rhsShape[0]) {
     mlir::emitError(getLoc(), "MatmulOp: Input matrix shape mismatch");
   }
