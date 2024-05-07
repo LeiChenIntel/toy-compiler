@@ -316,11 +316,11 @@ public:
 
       const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
       const auto elementType = tensorType.getElementType();
-      const int64_t length = tensorType.getNumElements();
-      const auto loadedEleType = VectorType::get({length}, elementType);
 
       auto lhsInput = adaptor.getLhs();
       auto lhsType = lhsInput.getType().template cast<ShapedType>();
+      uint32_t lhsRows = lhsType.getShape()[0];
+      uint32_t lhsCols = lhsType.getShape()[1];
       if (lhsType.getRank() > 1) {
         int64_t num = lhsType.getNumElements();
         auto newlhsType = MemRefType::get({num}, lhsType.getElementType());
@@ -333,6 +333,7 @@ public:
 
       auto rhsInput = adaptor.getRhs();
       auto rhsType = rhsInput.getType().template cast<ShapedType>();
+      uint32_t rhsCols = rhsType.getShape()[1];
       if (rhsType.getRank() > 1) {
         int64_t num = rhsType.getNumElements();
         auto newrhsType = MemRefType::get({num}, rhsType.getElementType());
@@ -355,12 +356,16 @@ public:
       auto cst = rewriter.create<arith::ConstantOp>(
           loc, rewriter.getIndexType(), rewriter.getIndexAttr(0));
       SmallVector<mlir::Value, 4> memRefIdx(1, cst);
-      auto loadedLhs = rewriter.create<vector::LoadOp>(loc, loadedEleType,
+      const auto lhsVectorType =
+          VectorType::get({lhsRows * lhsCols}, elementType);
+      const auto rhsVectorType =
+          VectorType::get({lhsCols * rhsCols}, elementType);
+      auto loadedLhs = rewriter.create<vector::LoadOp>(loc, lhsVectorType,
                                                        lhsInput, memRefIdx);
-      auto loadedRhs = rewriter.create<vector::LoadOp>(loc, loadedEleType,
+      auto loadedRhs = rewriter.create<vector::LoadOp>(loc, rhsVectorType,
                                                        rhsInput, memRefIdx);
-      mlir::Value matmulResult =
-          rewriter.create<vector::MatmulOp>(loc, loadedLhs, loadedRhs, 4, 4, 4);
+      mlir::Value matmulResult = rewriter.create<vector::MatmulOp>(
+          loc, loadedLhs, loadedRhs, lhsRows, lhsCols, rhsCols);
       rewriter.create<vector::StoreOp>(loc, matmulResult, memRef, memRefIdx);
 
       rewriter.replaceOp(op, memRef);
