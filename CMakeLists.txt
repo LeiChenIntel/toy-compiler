@@ -14,13 +14,13 @@ set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}")
 
 # Define options
 # Need AVX2 support for benchmarks! Only support release mode!
-set(ENABLE_TOY_BENCHMARKS ON)
+option(ENABLE_TOY_BENCHMARKS "" ON)
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     message(WARNING "Please set ENABLE_TOY_BENCHMARKS OFF for RelWithDebInfo and Debug.")
 endif()
 
 # Need OpenBLAS library for matrix multiplication benchmarks!
-set(ENABLE_MATMUL_BENCHMARKS OFF)
+option(ENABLE_MATMUL_BENCHMARKS "" OFF)
 
 # Use /MD instead of /MT in googletest
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)

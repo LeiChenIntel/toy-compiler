@@ -117,11 +117,11 @@ int main() {
   const int iter = 100;
 
   // Manually matrix multiplication one element by one element
-  clean();
+  // clean();
   simpleMatmul(squareMatDim, iter);
 
   // OpenBLAS matrix multiplication
-  clean();
+  // clean();
   openBLASMatmul(squareMatDim, iter);
 
   return 0;
