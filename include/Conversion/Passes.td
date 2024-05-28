@@ -33,7 +33,8 @@ def ConvertMidToLLVM: Pass<"convert-mid-to-llvm", "mlir::ModuleOp"> {
 
     let dependentDialects = [
       "mlir::LLVM::LLVMDialect",
-      "mlir::scf::SCFDialect"];
+      "mlir::scf::SCFDialect",
+      "mlir::amx::AMXDialect"];
 }
 
 #endif // CONVERSION_PASSES_TD

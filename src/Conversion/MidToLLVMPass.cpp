@@ -160,6 +160,7 @@ public:
     mlir::cf::populateControlFlowToLLVMConversionPatterns(typeConverter,
                                                           patterns);
     mlir::populateFuncToLLVMConversionPatterns(typeConverter, patterns);
+    mlir::populateVectorToLLVMMatrixConversionPatterns(typeConverter, patterns);
     mlir::populateVectorToLLVMConversionPatterns(typeConverter, patterns);
 
     // The only remaining operation to lower from the `toy` dialect, is the

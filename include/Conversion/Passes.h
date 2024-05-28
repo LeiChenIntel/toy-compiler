@@ -1,6 +1,7 @@
 #ifndef TOY_COMPILER_PASSES_H
 #define TOY_COMPILER_PASSES_H
 
+#include <mlir/Dialect/AMX/AMXDialect.h>
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
 #include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/Dialect/Func/IR/FuncOps.h>

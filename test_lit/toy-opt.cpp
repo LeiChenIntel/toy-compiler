@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
                   mlir::arith::ArithDialect, mlir::BuiltinDialect,
                   mlir::func::FuncDialect, mlir::memref::MemRefDialect,
                   mlir::scf::SCFDialect, mlir::LLVM::LLVMDialect,
-                  mlir::vector::VectorDialect>();
+                  mlir::vector::VectorDialect, mlir::amx::AMXDialect>();
 
   return mlir::asMainReturnCode(
       mlir::MlirOptMain(argc, argv, "Toy optimizer tool\n", registry));
