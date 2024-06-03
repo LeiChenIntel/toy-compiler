@@ -155,3 +155,10 @@ toy.func @convert_mul_to_mid_vec_4x5_dim(%arg0: tensor<4x5xf64>, %arg1: tensor<4
     // CHECK: memref.dealloc %alloc : memref<4x5xf64>
     // CHECK: return
 }
+
+// CHECK-LABEL: @convert_matmul_to_amx
+toy.func @convert_matmul_to_amx(%arg0: tensor<2x4xbf16>, %arg1: tensor<2x4xbf16>, %arg2: tensor<2x2xf32>) {
+    %0 = toy.matmul(%arg0, %arg1) : tensor<2x4xbf16>, tensor<2x4xbf16> -> tensor<2x2xf32>
+    toy.store(%0, %arg2) : tensor<2x2xf32>, tensor<2x2xf32>
+    toy.return
+}

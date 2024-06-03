@@ -21,6 +21,7 @@ def ConvertToyToMid: Pass<"convert-toy-to-mid", "mlir::ModuleOp"> {
       "mlir::func::FuncDialect",
       "mlir::memref::MemRefDialect",
       "mlir::vector::VectorDialect",
+      "mlir::amx::AMXDialect",
       "mlir::toy::ToyDialect"];
 }
 
@@ -33,8 +34,7 @@ def ConvertMidToLLVM: Pass<"convert-mid-to-llvm", "mlir::ModuleOp"> {
 
     let dependentDialects = [
       "mlir::LLVM::LLVMDialect",
-      "mlir::scf::SCFDialect",
-      "mlir::amx::AMXDialect"];
+      "mlir::scf::SCFDialect"];
 }
 
 #endif // CONVERSION_PASSES_TD
