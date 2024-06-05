@@ -161,4 +161,11 @@ toy.func @convert_matmul_to_amx(%arg0: tensor<2x4xbf16>, %arg1: tensor<2x4xbf16>
     %0 = toy.matmul(%arg0, %arg1) : tensor<2x4xbf16>, tensor<2x4xbf16> -> tensor<2x2xf32>
     toy.store(%0, %arg2) : tensor<2x2xf32>, tensor<2x2xf32>
     toy.return
+    // CHECK: %c0 = arith.constant 0 : index
+    // CHECK: %0 = amx.tile_load %arg0[%c0, %c0] : memref<2x4xbf16> into vector<2x4xbf16>
+    // CHECK: %1 = amx.tile_load %arg1[%c0, %c0] : memref<2x4xbf16> into vector<2x4xbf16>
+    // CHECK: %2 = amx.tile_zero : vector<2x2xf32>
+    // CHECK: %3 = amx.tile_mulf %0, %1, %2 : vector<2x4xbf16>, vector<2x4xbf16>, vector<2x2xf32>
+    // CHECK: amx.tile_store %arg2[%c0, %c0], %3 : memref<2x2xf32>, vector<2x2xf32>
+    // CHECK: return
 }
