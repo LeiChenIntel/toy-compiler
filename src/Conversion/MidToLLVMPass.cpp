@@ -1,6 +1,7 @@
 #include "Conversion/Passes.h"
 #include "Toy/Dialect.h"
 
+#include <mlir/Dialect/AMX/Transforms.h>
 #include <mlir/Conversion/AffineToStandard/AffineToStandard.h>
 #include <mlir/Conversion/ArithToLLVM/ArithToLLVM.h>
 #include <mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h>
@@ -144,6 +145,7 @@ public:
     LLVMConversionTarget target(getContext());
     // Declare ModuleOp legal operation for FullConversion
     target.addLegalOp<mlir::ModuleOp>();
+    mlir::configureAMXLegalizeForExportTarget(target);
 
     LowerToLLVMOptions options(&getContext());
     // Use pointer-to-structure but not unpacked input arguments
@@ -160,7 +162,9 @@ public:
     mlir::cf::populateControlFlowToLLVMConversionPatterns(typeConverter,
                                                           patterns);
     mlir::populateFuncToLLVMConversionPatterns(typeConverter, patterns);
+    mlir::populateVectorToLLVMMatrixConversionPatterns(typeConverter, patterns);
     mlir::populateVectorToLLVMConversionPatterns(typeConverter, patterns);
+    mlir::populateAMXLegalizeForLLVMExportPatterns(typeConverter, patterns);
 
     // The only remaining operation to lower from the `toy` dialect, is the
     // PrintOp.

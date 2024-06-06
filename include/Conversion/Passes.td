@@ -21,6 +21,7 @@ def ConvertToyToMid: Pass<"convert-toy-to-mid", "mlir::ModuleOp"> {
       "mlir::func::FuncDialect",
       "mlir::memref::MemRefDialect",
       "mlir::vector::VectorDialect",
+      "mlir::amx::AMXDialect",
       "mlir::toy::ToyDialect"];
 }
 

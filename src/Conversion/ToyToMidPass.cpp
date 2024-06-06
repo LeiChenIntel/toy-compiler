@@ -315,59 +315,33 @@ public:
       mlir::Value memRef = createStoreOpMemRef(op, rewriter);
 
       const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
-      const auto elementType = tensorType.getElementType();
-
-      auto lhsInput = adaptor.getLhs();
-      auto lhsType = lhsInput.getType().template cast<ShapedType>();
-      uint32_t lhsRows = lhsType.getShape()[0];
-      uint32_t lhsCols = lhsType.getShape()[1];
-      if (lhsType.getRank() > 1) {
-        int64_t num = lhsType.getNumElements();
-        auto newlhsType = MemRefType::get({num}, lhsType.getElementType());
-        std::vector<int64_t> newSize = {num};
-        std::vector<int64_t> newStride = {1};
-        lhsInput = rewriter.create<memref::ReinterpretCastOp>(
-            loc, newlhsType, lhsInput, 0, ArrayRef(newSize),
-            ArrayRef(newStride));
-      }
-
-      auto rhsInput = adaptor.getRhs();
-      auto rhsType = rhsInput.getType().template cast<ShapedType>();
-      uint32_t rhsCols = rhsType.getShape()[1];
-      if (rhsType.getRank() > 1) {
-        int64_t num = rhsType.getNumElements();
-        auto newrhsType = MemRefType::get({num}, rhsType.getElementType());
-        std::vector<int64_t> newSize = {num};
-        std::vector<int64_t> newStride = {1};
-        rhsInput = rewriter.create<memref::ReinterpretCastOp>(
-            loc, newrhsType, rhsInput, 0, ArrayRef(newSize),
-            ArrayRef(newStride));
-      }
-
-      if (tensorType.getRank() > 1) {
-        const int64_t length = tensorType.getNumElements();
-        auto memRefType = MemRefType::get({length}, elementType);
-        std::vector<int64_t> newSize = {length};
-        std::vector<int64_t> newStride = {1};
-        memRef = rewriter.create<memref::ReinterpretCastOp>(
-            loc, memRefType, memRef, 0, ArrayRef(newSize), ArrayRef(newStride));
-      }
 
       auto cst = rewriter.create<arith::ConstantOp>(
           loc, rewriter.getIndexType(), rewriter.getIndexAttr(0));
-      SmallVector<mlir::Value, 4> memRefIdx(1, cst);
-      const auto lhsVectorType =
-          VectorType::get({lhsRows * lhsCols}, elementType);
-      const auto rhsVectorType =
-          VectorType::get({lhsCols * rhsCols}, elementType);
-      auto loadedLhs = rewriter.create<vector::LoadOp>(loc, lhsVectorType,
-                                                       lhsInput, memRefIdx);
-      auto loadedRhs = rewriter.create<vector::LoadOp>(loc, rhsVectorType,
-                                                       rhsInput, memRefIdx);
-      mlir::Value matmulResult = rewriter.create<vector::MatmulOp>(
-          loc, loadedLhs, loadedRhs, lhsRows, lhsCols, rhsCols);
-      rewriter.create<vector::StoreOp>(loc, matmulResult, memRef, memRefIdx);
+      SmallVector<mlir::Value, 4> matIdx(2, cst);
 
+      auto lhsInput = adaptor.getLhs();
+      auto lhsType = lhsInput.getType().template cast<ShapedType>();
+      const auto lhsVectorType =
+          VectorType::get(lhsType.getShape(), lhsType.getElementType());
+      auto loadedLhs = rewriter.create<amx::TileLoadOp>(loc, lhsVectorType,
+                                                        lhsInput, matIdx);
+
+      auto rhsInput = adaptor.getRhs();
+      auto rhsType = rhsInput.getType().template cast<ShapedType>();
+      const auto rhsVectorType =
+          VectorType::get(rhsType.getShape(), rhsType.getElementType());
+      auto loadedRhs = rewriter.create<amx::TileLoadOp>(loc, rhsVectorType,
+                                                        rhsInput, matIdx);
+
+      const auto resVectorType =
+          VectorType::get(tensorType.getShape(), tensorType.getElementType());
+      auto accInput = rewriter.create<amx::TileZeroOp>(loc, resVectorType);
+
+      auto res = rewriter.create<amx::TileMulFOp>(loc, resVectorType, loadedLhs,
+                                                  loadedRhs, accInput);
+
+      rewriter.create<amx::TileStoreOp>(loc, memRef, matIdx, res);
       rewriter.replaceOp(op, memRef);
     } else if (mode == toy::LoweringPatternMode::Loop) {
       lowerMatmulOpToLoops(
@@ -557,7 +531,8 @@ public:
     // `Affine`, `Arith`, `Func`, and `MemRef` dialects.
     target.addLegalDialect<affine::AffineDialect, BuiltinDialect,
                            arith::ArithDialect, func::FuncDialect,
-                           memref::MemRefDialect, vector::VectorDialect>();
+                           memref::MemRefDialect, vector::VectorDialect,
+                           amx::AMXDialect>();
 
     // We also define the Toy dialect as Illegal so that the conversion will
     // fail if any of these operations are *not* converted. Given that we

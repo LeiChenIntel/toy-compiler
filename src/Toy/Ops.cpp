@@ -136,7 +136,7 @@ mlir::LogicalResult MatmulOp::verify() {
   if (!lhsType.hasRank() || !rhsType.hasRank()) {
     return mlir::success();
   }
-  if (lhsShape[1] != rhsShape[0]) {
+  if (lhsShape[0] != rhsShape[0] || lhsShape[1] != rhsShape[1]) {
     mlir::emitError(getLoc(), "MatmulOp: Input matrix shape mismatch");
   }
   return mlir::success();
@@ -158,9 +158,17 @@ mlir::LogicalResult MatmulOp::inferReturnTypes(
   } else {
     const auto inLhsShape = inLhsType.getShape();
     const auto inRhsShape = inRhsType.getShape();
-    const auto resultShape = {inLhsShape[0], inRhsShape[1]};
-    outType =
-        mlir::RankedTensorType::get(resultShape, inLhsType.getElementType());
+    const auto resultShape = {inLhsShape[0], inRhsShape[0]};
+    // TODO: Design a proper method to manage datatype conversion
+    mlir::Type outElementType = nullptr;
+    if (inLhsType.getElementType().isBF16()) {
+      outElementType = mlir::Float32Type::get(ctx);
+    } else if (inLhsType.getElementType().isSignedInteger(8)) {
+      outElementType = mlir::IntegerType::get(ctx, 32);
+    } else {
+      outElementType = inLhsType.getElementType();
+    }
+    outType = mlir::RankedTensorType::get(resultShape, outElementType);
   }
   inferredReturnTypes.push_back(outType);
   return mlir::success();

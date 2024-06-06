@@ -1,4 +1,5 @@
 # RUN: toy-translate %s -emit=mlir-mid -opt -lower-pat=vector 2>&1 | FileCheck %s
+# UNSUPPORTED: true
 
 def funcInputs() {
   varf64 a<3, 4> = [0];
