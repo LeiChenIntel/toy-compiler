@@ -24,6 +24,7 @@ option(ENABLE_MATMUL_BENCHMARKS "" OFF)
 
 # Use /MD instead of /MT in googletest
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+set(INSTALL_GTEST OFF)
 add_subdirectory(thirdparty/googletest)
 
 # Need to find Python package to enable LIT on Windows platform
