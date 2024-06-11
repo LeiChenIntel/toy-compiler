@@ -8,6 +8,7 @@ get_property(extension_libs GLOBAL PROPERTY MLIR_EXTENSION_LIBS)
 target_link_libraries(toy-opt PRIVATE ${dialect_libs} ${extension_libs} MLIROptLib MLIRTransforms MLIRPass
         MLIRVectorToLLVM)
 target_link_libraries(toy-opt PRIVATE ToyIR ToyTransforms ToyConversion)
+add_dependencies(all-targets toy-opt)
 install(TARGETS toy-opt RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
 
 # toy-translate is designed to translate one IR to another IR
@@ -18,6 +19,7 @@ target_include_directories(toy-translate SYSTEM PRIVATE ${LLVM_INCLUDE_DIRS} ${M
 target_link_libraries(toy-translate PRIVATE ${dialect_libs} ${extension_libs} MLIRSupport MLIRIR MLIRTransforms
         MLIRInferTypeOpInterface MLIRExecutionEngine)
 target_link_libraries(toy-translate PRIVATE ToyIR ToyFrontend ToyTransforms ToyConversion)
+add_dependencies(all-targets toy-translate)
 install(TARGETS toy-translate RUNTIME DESTINATION bin LIBRARY DESTINATION bin ARCHIVE DESTINATION lib)
 
 configure_lit_site_cfg(

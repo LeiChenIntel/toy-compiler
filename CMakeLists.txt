@@ -43,6 +43,15 @@ include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
 include_directories(${PROJECT_SOURCE_DIR}/include) # Include .td files
 include_directories(${PROJECT_BINARY_DIR}/include) # Include generated files
 
+# Add all targets depends on all-targets
+# Install should be triggered after all targets built
+add_custom_target(all-targets ALL)
+add_custom_command(
+    TARGET all-targets
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} --install .
+    COMMENT "Install project ...")
+
 add_subdirectory(examples)
 add_subdirectory(include/Conversion)
 add_subdirectory(include/Toy)
