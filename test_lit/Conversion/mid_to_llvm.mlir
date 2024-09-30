@@ -10,10 +10,10 @@ func.func @convert_amx_to_llvm(%arg0: memref<2x4xbf16>, %arg1: memref<2x4xbf16>,
     amx.tile_store %arg2[%c0, %c0], %3 : memref<2x2xf32>, vector<2x2xf32>
     return
 
-    // CHECK: %48 = "amx.tileloadd64"(%41, %40, %47, %42) : (i16, i16, !llvm.ptr, i64) -> !llvm.array<2 x vector<4xbf16>>
-    // CHECK: %57 = "amx.tileloadd64"(%50, %49, %56, %51) : (i16, i16, !llvm.ptr, i64) -> !llvm.array<2 x vector<4xbf16>>
-    // CHECK: %60 = "amx.tilezero"(%59, %58) : (i16, i16) -> !llvm.array<2 x vector<2xf32>>
-    // CHECK: %65 = "amx.tdpbf16ps"(%62, %63, %61, %60, %48, %57) : (i16, i16, i16, !llvm.array<2 x vector<2xf32>>,
+    // CHECK: [[INPUT_0:%.*]] = "amx.tileloadd64"([[ARG_00:%.*]], [[ARG_01:%.*]], [[ARG_02:%.*]], [[ARG_03:%.*]]) : (i16, i16, !llvm.ptr, i64) -> !llvm.array<2 x vector<4xbf16>>
+    // CHECK: [[INPUT_1:%.*]] = "amx.tileloadd64"([[ARG_10:%.*]], [[ARG_11:%.*]], [[ARG_12:%.*]], [[ARG_13:%.*]]) : (i16, i16, !llvm.ptr, i64) -> !llvm.array<2 x vector<4xbf16>>
+    // CHECK: [[ZEROS:%.*]] = "amx.tilezero"([[ARG_20:%.*]], [[ARG_21:%.*]]) : (i16, i16) -> !llvm.array<2 x vector<2xf32>>
+    // CHECK: [[OUTPUT:%.*]] = "amx.tdpbf16ps"([[ARG_30:%.*]], [[ARG_31:%.*]], [[ARG_32:%.*]], [[ZEROS]], [[INPUT_0]], [[INPUT_1]]) : (i16, i16, i16, !llvm.array<2 x vector<2xf32>>,
     // CHECK-SAME:   !llvm.array<2 x vector<4xbf16>>, !llvm.array<2 x vector<4xbf16>>) -> !llvm.array<2 x vector<2xf32>>
-    // CHECK: "amx.tilestored64"(%67, %66, %73, %68, %65) : (i16, i16, !llvm.ptr, i64, !llvm.array<2 x vector<2xf32>>) -> ()
+    // CHECK: "amx.tilestored64"([[ARG_40:%.*]], [[ARG_41:%.*]], [[ARG_42:%.*]], [[ARG_43:%.*]], [[OUTPUT]]) : (i16, i16, !llvm.ptr, i64, !llvm.array<2 x vector<2xf32>>) -> ()
 }

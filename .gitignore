@@ -34,6 +34,10 @@
 # Exclude Jetbrain
 .idea
 cmake-build-debug
+cmake-build-relwithdebinfo
 cmake-build-release
 cmake-build-relwithdebinfo-visual-studio
 cmake-build-release-visual-studio
+
+# Exclude generated script file
+test_lit/lit.site.cfg.py

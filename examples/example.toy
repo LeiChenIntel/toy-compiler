@@ -1,0 +1,11 @@
+def funcInputs() {
+  varf64 a<3> = [0];
+  varf64 b<3> = [0];
+  varf64 c<3> = [0];
+}
+
+def add_tensors(a, b, c) {
+  varf64 d = a + b;
+  store(d, c);
+  return;
+}

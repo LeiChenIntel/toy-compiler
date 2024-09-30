@@ -80,6 +80,7 @@ int main(int argc, char **argv) {
   optPmFunc.addPass(mlir::affine::createLoopFusionPass());
   optPmFunc.addPass(mlir::affine::createAffineScalarReplacementPass());
   pm.addPass(mlir::toy::createConvertMidToLLVMPass());
+  pm.addPass(mlir::createCanonicalizerPass());
   if (mlir::failed(pm.run(*module))) {
     llvm::errs() << "Fail to run lowering pass to LLVM\n";
     return -1;
