@@ -122,6 +122,7 @@ int dumpMLIR(mlir::MLIRContext &ctx,
 
   if (isLoweringToLLVM) {
     pm.addPass(mlir::toy::createConvertMidToLLVMPass());
+    pm.addPass(mlir::createCanonicalizerPass());
     // This is necessary to have line tables emitted and basic
     // debugger working. In the future we will add proper debug information
     // emission directly from our frontend.
