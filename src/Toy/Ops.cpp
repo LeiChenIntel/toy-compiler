@@ -24,7 +24,7 @@ mlir::OpFoldResult AddOp::fold(FoldAdaptor adaptor) {
 
   ConstantOp lhsOp = lhs.getDefiningOp<toy::ConstantOp>();
   const auto lhsCstAttr = lhsOp.getValueAttr();
-  const int len = lhsOp.getType().dyn_cast<TensorType>().getNumElements();
+  const int len = llvm::dyn_cast<TensorType>(lhsOp.getType()).getNumElements();
   const auto lhsType = lhsOp.getType();
   const auto lhsVal = lhsCstAttr.getValues<double>();
 
@@ -45,8 +45,8 @@ mlir::OpFoldResult AddOp::fold(FoldAdaptor adaptor) {
 }
 
 mlir::LogicalResult AddOp::verify() {
-  const auto lhsType = getLhs().getType().dyn_cast<mlir::ShapedType>();
-  const auto rhsType = getRhs().getType().dyn_cast<mlir::ShapedType>();
+  const auto lhsType = llvm::dyn_cast<mlir::ShapedType>(getLhs().getType());
+  const auto rhsType = llvm::dyn_cast<mlir::ShapedType>(getRhs().getType());
 
   if (lhsType.getElementType() != rhsType.getElementType()) {
     mlir::emitError(getLoc(), "AddOp: Input element type mismatch");
@@ -75,8 +75,8 @@ mlir::LogicalResult AddOp::inferReturnTypes(
     return mlir::failure();
   }
 
-  const auto inLhsType = add.getLhs().getType().cast<mlir::ShapedType>();
-  const auto inRhsType = add.getRhs().getType().cast<mlir::ShapedType>();
+  const auto inLhsType = llvm::cast<mlir::ShapedType>(add.getLhs().getType());
+  const auto inRhsType = llvm::cast<mlir::ShapedType>(add.getRhs().getType());
 
   mlir::Type outType;
   if (!inLhsType.hasRank() || !inRhsType.hasRank()) {
@@ -102,7 +102,7 @@ mlir::OpFoldResult MatmulOp::fold(FoldAdaptor adaptor) {
 
   ConstantOp lhsOp = lhs.getDefiningOp<toy::ConstantOp>();
   const auto lhsCstAttr = lhsOp.getValueAttr();
-  const int len = lhsOp.getType().dyn_cast<TensorType>().getNumElements();
+  const int len = llvm::dyn_cast<TensorType>(lhsOp.getType()).getNumElements();
   const auto lhsType = lhsOp.getType();
   const auto lhsVal = lhsCstAttr.getValues<double>();
 
@@ -123,8 +123,8 @@ mlir::OpFoldResult MatmulOp::fold(FoldAdaptor adaptor) {
 }
 
 mlir::LogicalResult MatmulOp::verify() {
-  const auto lhsType = getLhs().getType().dyn_cast<mlir::ShapedType>();
-  const auto rhsType = getRhs().getType().dyn_cast<mlir::ShapedType>();
+  const auto lhsType = llvm::dyn_cast<mlir::ShapedType>(getLhs().getType());
+  const auto rhsType = llvm::dyn_cast<mlir::ShapedType>(getRhs().getType());
   const auto lhsShape = lhsType.getShape();
   const auto rhsShape = rhsType.getShape();
 
@@ -149,8 +149,8 @@ mlir::LogicalResult MatmulOp::inferReturnTypes(
     llvm::SmallVectorImpl<::mlir::Type> &inferredReturnTypes) {
 
   MatmulOpAdaptor mul(operands, attrs);
-  const auto inLhsType = mul.getLhs().getType().cast<mlir::ShapedType>();
-  const auto inRhsType = mul.getRhs().getType().cast<mlir::ShapedType>();
+  const auto inLhsType = llvm::cast<mlir::ShapedType>(mul.getLhs().getType());
+  const auto inRhsType = llvm::cast<mlir::ShapedType>(mul.getRhs().getType());
 
   mlir::Type outType;
   if (!inLhsType.hasRank() || !inRhsType.hasRank()) {
@@ -188,7 +188,7 @@ mlir::OpFoldResult MulOp::fold(FoldAdaptor adaptor) {
 
   ConstantOp lhsOp = lhs.getDefiningOp<toy::ConstantOp>();
   const auto lhsCstAttr = lhsOp.getValueAttr();
-  const int len = lhsOp.getType().dyn_cast<TensorType>().getNumElements();
+  const int len = llvm::dyn_cast<TensorType>(lhsOp.getType()).getNumElements();
   const auto lhsType = lhsOp.getType();
   const auto lhsVal = lhsCstAttr.getValues<double>();
 
@@ -209,8 +209,8 @@ mlir::OpFoldResult MulOp::fold(FoldAdaptor adaptor) {
 }
 
 mlir::LogicalResult MulOp::verify() {
-  const auto lhsType = getLhs().getType().dyn_cast<mlir::ShapedType>();
-  const auto rhsType = getRhs().getType().dyn_cast<mlir::ShapedType>();
+  const auto lhsType = llvm::dyn_cast<mlir::ShapedType>(getLhs().getType());
+  const auto rhsType = llvm::dyn_cast<mlir::ShapedType>(getRhs().getType());
 
   if (lhsType.getElementType() != rhsType.getElementType()) {
     mlir::emitError(getLoc(), "MulOp: Input element type mismatch");
@@ -239,8 +239,8 @@ mlir::LogicalResult MulOp::inferReturnTypes(
     return mlir::failure();
   }
 
-  const auto inLhsType = mul.getLhs().getType().cast<mlir::ShapedType>();
-  const auto inRhsType = mul.getRhs().getType().cast<mlir::ShapedType>();
+  const auto inLhsType = llvm::cast<mlir::ShapedType>(mul.getLhs().getType());
+  const auto inRhsType = llvm::cast<mlir::ShapedType>(mul.getRhs().getType());
 
   mlir::Type outType;
   if (!inLhsType.hasRank() || !inRhsType.hasRank()) {

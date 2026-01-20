@@ -1,7 +1,6 @@
 #include "Conversion/Passes.h"
 #include "Toy/Dialect.h"
 
-#include <mlir/Dialect/AMX/Transforms.h>
 #include <mlir/Conversion/AffineToStandard/AffineToStandard.h>
 #include <mlir/Conversion/ArithToLLVM/ArithToLLVM.h>
 #include <mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h>
@@ -11,6 +10,7 @@
 #include <mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h>
 #include <mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h>
 #include <mlir/Conversion/VectorToLLVM/ConvertVectorToLLVM.h>
+#include <mlir/Dialect/AMX/Transforms.h>
 
 using namespace mlir;
 
@@ -26,7 +26,7 @@ class ToyPrintOpPattern : public OpConversionPattern<toy::PrintOp> {
   matchAndRewrite(toy::PrintOp op, OpAdaptor adaptor,
                   ConversionPatternRewriter &rewriter) const override {
     auto *context = rewriter.getContext();
-    auto memRefType = op.getInput().getType().cast<MemRefType>();
+    auto memRefType = llvm::cast<MemRefType>(op.getInput().getType());
     auto memRefShape = memRefType.getShape();
     auto loc = op.getLoc();
 

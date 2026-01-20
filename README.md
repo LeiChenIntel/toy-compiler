@@ -33,7 +33,7 @@ git submodule update --init
 
 Build MLIR framework by following [MLIR Getting Started](https://mlir.llvm.org/getting_started/).
 
-The branch `release/19.x` (`f0010d13`) is used. Note that using different branches might cause errors.
+The branch `release/21.x` (`2078da43`) is used. Note that using different branches might cause errors.
 
 More details can be found in the [checklist](docs/checklist.md).
 
