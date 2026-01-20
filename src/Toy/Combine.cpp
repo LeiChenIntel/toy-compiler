@@ -28,10 +28,10 @@ struct FoldConstantReshapeOptPattern
       return failure();
     }
 
-    auto inputType = input.getType().dyn_cast<TensorType>();
+    auto inputType = llvm::dyn_cast<TensorType>(input.getType());
     auto inputNumElements = inputType.getNumElements();
     auto inputEleType = inputType.getElementType();
-    auto outputType = op.getResult().getType().dyn_cast<TensorType>();
+    auto outputType = llvm::dyn_cast<TensorType>(op.getResult().getType());
     auto outputNumElements = outputType.getNumElements();
     auto outputEleType = outputType.getElementType();
 

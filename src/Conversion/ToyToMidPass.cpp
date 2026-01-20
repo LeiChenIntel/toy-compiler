@@ -35,7 +35,7 @@ static Value insertAllocAndDealloc(MemRefType type, Location loc,
 }
 
 static Value createStoreOpMemRef(Operation *op, PatternRewriter &rewriter) {
-  const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+  const auto tensorType = llvm::cast<TensorType>(*op->result_type_begin());
   const auto loc = op->getLoc();
   const auto opResVal = op->getResult(0);
   mlir::Value memRef;
@@ -76,7 +76,7 @@ using LoopIterationFn = function_ref<Value(
 static void lowerOpToLoops(Operation *op, ValueRange operands,
                            PatternRewriter &rewriter,
                            LoopIterationFn processIteration) {
-  auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+  auto tensorType = llvm::cast<TensorType>(*op->result_type_begin());
   auto loc = op->getLoc();
 
   if (op->getResults().size() != 1) {
@@ -112,7 +112,7 @@ static void lowerOpToLoops(Operation *op, ValueRange operands,
 static void lowerMatmulOpToLoops(Operation *op, ValueRange operands,
                                  PatternRewriter &rewriter,
                                  LoopIterationFn processIteration) {
-  auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+  auto tensorType = llvm::cast<TensorType>(*op->result_type_begin());
   auto loc = op->getLoc();
   if (op->getResults().size() != 1) {
     emitError(loc, "Only support operation with 1 result");
@@ -125,7 +125,8 @@ static void lowerMatmulOpToLoops(Operation *op, ValueRange operands,
      Next, get the dimension hidden in the matrix multiplication process,
     that is, the column j of the first matrix or the row j of the second
     maFtrix */
-  auto hiddenDim = op->getOperand(0).getType().cast<ShapedType>().getShape()[1];
+  auto hiddenDim =
+      llvm::cast<ShapedType>(op->getOperand(0).getType()).getShape()[1];
   SmallVector<int64_t, 1> dim;
   dim.push_back(hiddenDim);
   /* The outermost layer is a double loop, and the IVS can get the I and K, and
@@ -181,14 +182,13 @@ public:
     if (mode == toy::LoweringPatternMode::Vector) {
       mlir::Value memRef = createStoreOpMemRef(op, rewriter);
 
-      const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+      const auto tensorType = llvm::cast<TensorType>(*op->result_type_begin());
       const auto elementType = tensorType.getElementType();
       typename ToyBinaryOp::Adaptor binaryAdaptor(operands);
 
       // Reshape high dimension memref to 1D memref
       auto lhsInput = binaryAdaptor.getLhs();
-      auto lhsType =
-          binaryAdaptor.getLhs().getType().template cast<ShapedType>();
+      auto lhsType = llvm::cast<ShapedType>(binaryAdaptor.getLhs().getType());
       if (lhsType.getRank() > 1) {
         int64_t num = lhsType.getNumElements();
         auto newlhsType = MemRefType::get({num}, lhsType.getElementType());
@@ -200,8 +200,7 @@ public:
       }
 
       auto rhsInput = binaryAdaptor.getRhs();
-      auto rhsType =
-          binaryAdaptor.getRhs().getType().template cast<ShapedType>();
+      auto rhsType = llvm::cast<ShapedType>(binaryAdaptor.getRhs().getType());
       if (rhsType.getRank() > 1) {
         int64_t num = rhsType.getNumElements();
         auto newrhsType = MemRefType::get({num}, rhsType.getElementType());
@@ -314,21 +313,21 @@ public:
     if (mode == toy::LoweringPatternMode::Vector) {
       mlir::Value memRef = createStoreOpMemRef(op, rewriter);
 
-      const auto tensorType = (*op->result_type_begin()).cast<TensorType>();
+      const auto tensorType = llvm::cast<TensorType>(*op->result_type_begin());
 
       auto cst = rewriter.create<arith::ConstantOp>(
           loc, rewriter.getIndexType(), rewriter.getIndexAttr(0));
       SmallVector<mlir::Value, 4> matIdx(2, cst);
 
       auto lhsInput = adaptor.getLhs();
-      auto lhsType = lhsInput.getType().template cast<ShapedType>();
+      auto lhsType = llvm::cast<ShapedType>(lhsInput.getType());
       const auto lhsVectorType =
           VectorType::get(lhsType.getShape(), lhsType.getElementType());
       auto loadedLhs = rewriter.create<amx::TileLoadOp>(loc, lhsVectorType,
                                                         lhsInput, matIdx);
 
       auto rhsInput = adaptor.getRhs();
-      auto rhsType = rhsInput.getType().template cast<ShapedType>();
+      auto rhsType = llvm::cast<ShapedType>(rhsInput.getType());
       const auto rhsVectorType =
           VectorType::get(rhsType.getShape(), rhsType.getElementType());
       auto loadedRhs = rewriter.create<amx::TileLoadOp>(loc, rhsVectorType,
@@ -388,7 +387,7 @@ class ToyConstantOpPattern : public OpConversionPattern<toy::ConstantOp> {
 
     // When lowering the constant operation, we allocate and assign the constant
     // values to a corresponding memref allocation.
-    auto tensorType = op.getType().cast<TensorType>();
+    auto tensorType = llvm::cast<TensorType>(op.getType());
     auto memRefType = convertTensorToMemRef(tensorType);
     auto alloc = insertAllocAndDealloc(memRefType, loc, rewriter);
 
@@ -453,7 +452,7 @@ class ToyFuncOpPattern : public OpConversionPattern<toy::FuncOp> {
     const auto args = op.getRegion().getArguments();
     llvm::SmallVector<mlir::Type, 4> argTypes;
     for (auto &a : args) {
-      auto tensorType = a.getType().cast<TensorType>();
+      auto tensorType = llvm::cast<TensorType>(a.getType());
       auto memRefType = convertTensorToMemRef(tensorType);
       a.setType(memRefType);
       argTypes.push_back(memRefType);
@@ -464,7 +463,7 @@ class ToyFuncOpPattern : public OpConversionPattern<toy::FuncOp> {
     for (auto &opi : op.getBody().getOps()) {
       if (auto retOp = mlir::dyn_cast<toy::ReturnOp>(opi)) {
         for (auto t : retOp.getInput().getType()) {
-          auto tensorType = t.cast<TensorType>();
+          auto tensorType = llvm::cast<TensorType>(t);
           auto memRefType = convertTensorToMemRef(tensorType);
           resTypes.push_back(memRefType);
         }
@@ -542,8 +541,9 @@ public:
     // MemRefType), so we only treat it as `legal` if its operands are legal.
     target.addIllegalDialect<toy::ToyDialect>();
     target.addDynamicallyLegalOp<toy::PrintOp>([](toy::PrintOp op) {
-      return llvm::none_of(op->getOperandTypes(),
-                           [](Type type) { return type.isa<TensorType>(); });
+      return llvm::none_of(op->getOperandTypes(), [](Type type) {
+        return llvm::isa<TensorType>(type);
+      });
     });
 
     // Now that the conversion target has been defined, we just need to provide

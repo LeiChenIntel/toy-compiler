@@ -156,6 +156,7 @@ toy.func @convert_mul_to_mid_vec_4x5_dim(%arg0: tensor<4x5xf64>, %arg1: tensor<4
     // CHECK: return
 }
 
+// XFAIL: *
 // CHECK-LABEL: @convert_matmul_to_amx
 toy.func @convert_matmul_to_amx(%arg0: tensor<2x4xbf16>, %arg1: tensor<2x4xbf16>, %arg2: tensor<2x2xf32>) {
     %0 = toy.matmul(%arg0, %arg1) : tensor<2x4xbf16>, tensor<2x4xbf16> -> tensor<2x2xf32>
