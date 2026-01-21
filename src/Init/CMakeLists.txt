@@ -1,5 +1,5 @@
 add_mlir_library(
-        Init
+    ToyInit
         Registry.cpp
-        DISABLE_INSTALL)
-target_include_directories(Init PUBLIC ${PROJECT_SOURCE_DIR}/include)
+    DISABLE_INSTALL)
+target_include_directories(ToyInit PUBLIC ${PROJECT_SOURCE_DIR}/include)

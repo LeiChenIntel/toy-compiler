@@ -1,12 +1,17 @@
 #include "Init/Registry.h"
 #include "Toy/Dialect.h"
+#include "Device1/Init.h"
 
 #include <mlir/IR/DialectRegistry.h>
 
 std::unique_ptr<IStrategiesInitializer> createStrategiesInitializer(const Platform device) {
   switch (device) {
+  // This is the interface to control which device strategies to use.
+  // Remove the Device[X]Initializer and directories:
+  // include/Device[X]/, src/Device[X]/ when a device is no longer supported.
+  // Benefits: It makes dialect libraries decouple from Device[X] libs.
   case Platform::Device1:
-    return nullptr;
+    return std::make_unique<Device1Initializer>();
   case Platform::Device2:
     return nullptr;
   default:
@@ -23,7 +28,8 @@ public:
 
   void apply(mlir::MLIRContext *context, mlir::toy::ToyDialect *) const override {
     const auto strategiesInitializer = createStrategiesInitializer(_device);
-    // Initialize the strategies of one device in the context
+    // Initialize the strategies of one device in the context.
+    // Initialize means to set cache to dialect, see Init.cpp.
     strategiesInitializer->initialize(context);
   }
 
@@ -31,6 +37,6 @@ private:
   Platform _device;
 };
 
-void registerToyStrategies(mlir::DialectRegistry &registry, Platform device) {
+void toy::registerToyStrategies(mlir::DialectRegistry &registry, Platform device) {
   registry.addExtension(mlir::TypeID::get<StrategiesExtension>(), std::make_unique<StrategiesExtension>(device));
 }

@@ -2,6 +2,7 @@
 #include "Toy/Dialect.h"
 #include "ToyFrontend/MLIRGen.h"
 #include "ToyFrontend/Parser.h"
+#include "Init/Registry.h"
 
 #include <mlir/Dialect/Affine/Passes.h>
 #include <mlir/Dialect/Func/Extensions/AllExtensions.h>
@@ -226,6 +227,8 @@ int main(int argc, char **argv) {
   cl::ParseCommandLineOptions(argc, argv, "toy compiler\n");
 
   mlir::DialectRegistry registry;
+  // Add registries before creating context
+  toy::registerToyStrategies(registry, Platform::Device1);
   mlir::func::registerAllExtensions(registry);
 
   mlir::MLIRContext context(registry);

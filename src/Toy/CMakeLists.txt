@@ -2,6 +2,7 @@ add_mlir_dialect_library(
     ToyIR
         Dialect.cpp
         Ops.cpp
+        Strategies.cpp
     PARTIAL_SOURCES_INTENDED
     DEPENDS
         ToyOpsIncGen)

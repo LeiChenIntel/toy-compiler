@@ -1,5 +1,6 @@
 #include "Conversion/Passes.h"
 #include "Toy/Dialect.h"
+#include "Init/Registry.h"
 
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
 #include <mlir/Dialect/Arith/IR/Arith.h>
@@ -16,6 +17,8 @@ int main(int argc, char **argv) {
   mlir::toy::registerConvertMidToLLVM();
 
   mlir::DialectRegistry registry;
+  // Add registries before creating context
+  toy::registerToyStrategies(registry, Platform::Device1);
   mlir::func::registerAllExtensions(registry);
 
   mlir::MLIRContext context(registry);

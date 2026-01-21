@@ -6,11 +6,13 @@
 class IStrategiesInitializer {
 public:
   virtual void initialize(mlir::MLIRContext *context) = 0;
-  virtual ~IStrategiesInitializer();
+  virtual ~IStrategiesInitializer() = default;
 };
 
 enum class Platform { Device1 = 0, Device2 };
 
+namespace toy {
 void registerToyStrategies(mlir::DialectRegistry &registry, Platform device);
+}
 
 #endif // INIT_REGISTRY_H
