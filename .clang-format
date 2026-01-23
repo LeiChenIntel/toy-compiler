@@ -1,1 +1,3 @@
 BasedOnStyle: LLVM
+ColumnLimit: 120
+InsertNewlineAtEOF: true
