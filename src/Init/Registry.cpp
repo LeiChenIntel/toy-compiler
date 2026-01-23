@@ -1,6 +1,7 @@
 #include "Init/Registry.h"
 #include "Toy/Dialect.h"
 #include "Device1/Init.h"
+#include "Device2/Init.h"
 
 #include <mlir/IR/DialectRegistry.h>
 
@@ -13,7 +14,7 @@ std::unique_ptr<IStrategiesInitializer> createStrategiesInitializer(const Platfo
   case Platform::Device1:
     return std::make_unique<Device1Initializer>();
   case Platform::Device2:
-    return nullptr;
+    return std::make_unique<Device2Initializer>();
   }
   llvm::errs() << "Error: Unknown platform in StrategiesInitializer" << "\n";
   std::exit(1);
