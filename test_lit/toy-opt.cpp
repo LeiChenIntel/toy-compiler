@@ -1,6 +1,7 @@
 #include "Conversion/Passes.h"
 #include "Toy/Dialect.h"
 #include "Init/Registry.h"
+#include "Utils/Utility.h"
 
 #include <mlir/Dialect/Affine/IR/AffineOps.h>
 #include <mlir/Dialect/Arith/IR/Arith.h>
@@ -12,13 +13,15 @@
 #include <mlir/Tools/mlir-opt/MlirOptMain.h>
 
 int main(int argc, char **argv) {
+  const auto targetPlatform = getPlatformFromCmd(argc, argv);
+
   mlir::registerCanonicalizerPass();
   mlir::toy::registerConvertToyToMid();
   mlir::toy::registerConvertMidToLLVM();
 
   mlir::DialectRegistry registry;
   // Add registries before creating context
-  toy::registerToyStrategies(registry, Platform::Device1);
+  toy::registerToyStrategies(registry, targetPlatform);
   mlir::func::registerAllExtensions(registry);
 
   mlir::MLIRContext context(registry);

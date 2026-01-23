@@ -220,6 +220,8 @@ int dumpAST() {
 }
 
 int main(int argc, char **argv) {
+  const auto targetPlatform = getPlatformFromCmd(argc, argv);
+
   mlir::registerAsmPrinterCLOptions();
   mlir::registerMLIRContextCLOptions();
   // Can use this option to print IR
@@ -228,7 +230,7 @@ int main(int argc, char **argv) {
 
   mlir::DialectRegistry registry;
   // Add registries before creating context
-  toy::registerToyStrategies(registry, Platform::Device1);
+  toy::registerToyStrategies(registry, targetPlatform);
   mlir::func::registerAllExtensions(registry);
 
   mlir::MLIRContext context(registry);

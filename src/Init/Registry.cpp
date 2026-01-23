@@ -14,10 +14,9 @@ std::unique_ptr<IStrategiesInitializer> createStrategiesInitializer(const Platfo
     return std::make_unique<Device1Initializer>();
   case Platform::Device2:
     return nullptr;
-  default:
-    std::runtime_error("Unknown device");
-    return nullptr;
   }
+  llvm::errs() << "Error: Unknown platform in StrategiesInitializer" << "\n";
+  std::exit(1);
 }
 
 class StrategiesExtension final
