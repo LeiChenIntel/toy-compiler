@@ -36,8 +36,6 @@ add_mlir_python_common_capi_library(ToyPythonCAPI
     #RELATIVE_INSTALL_ROOT "../../../.."
     DECLARED_SOURCES
         ToyPythonSources
-        # TODO: Remove this in favor of showing fine grained registration once
-        # available.
         MLIRPythonExtension.RegisterEverything
         MLIRPythonSources.Core)
 
@@ -50,8 +48,6 @@ add_mlir_python_modules(ToyPythonModules
     INSTALL_PREFIX "python_packages/toy/mlir_toy"
     DECLARED_SOURCES
         ToyPythonSources
-        # TODO: Remove this in favor of showing fine grained registration once
-        # available.
         MLIRPythonExtension.RegisterEverything
         MLIRPythonSources
     COMMON_CAPI_LINK_LIBS
