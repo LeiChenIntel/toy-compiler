@@ -54,9 +54,15 @@ TEST: testFastMathFlags
 Set `ENABLE_PYTHON_BINDINGS=ON` and rebuild toy-compiler.
 
 ##### 3. Run Toy-Compiler Python binding examples
+Check command line is under proper python virtual environment.
+
 Reset `PYTHONPATH` to include toy-compiler python bindings. Example,
 ```bash
 export PYTHONPATH=$TOY_COMPILER_BINARY_DIR/python_packages/toy
-[toy-compiler/cmake-build-release/python_packages/toy]
+[mlir-toy-compiler/cmake-build-release/python_packages/toy]
 ```
-
+Run python script under directory `mlir-toy-compiler/test_lit/python`
+```bash
+cd mlir-toy-compiler/test_lit/python
+python smoketest.py pybind11
+```
