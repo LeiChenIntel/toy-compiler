@@ -18,9 +18,10 @@ option(ENABLE_TOY_BENCHMARKS "" ON)
 if(NOT CMAKE_BUILD_TYPE STREQUAL "Release")
     message(WARNING "Please set ENABLE_TOY_BENCHMARKS OFF for RelWithDebInfo and Debug.")
 endif()
-
 # Need OpenBLAS library for matrix multiplication benchmarks!
 option(ENABLE_MATMUL_BENCHMARKS "" OFF)
+# Recommend to set up virtual environment for Python bindings
+option(ENABLE_PYTHON_BINDINGS "" ON)
 
 # Use /MD instead of /MT in googletest
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
@@ -38,6 +39,10 @@ list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(TableGen)
 include(AddLLVM)
 include(AddMLIR)
+if(ENABLE_PYTHON_BINDINGS)
+    include(MLIRDetectPythonEnv)
+    mlir_configure_python_dev_packages()
+endif()
 
 include_directories(SYSTEM ${MLIR_INCLUDE_DIRS})
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
@@ -59,6 +64,11 @@ add_subdirectory(include/Toy)
 add_subdirectory(src)
 add_subdirectory(test_lit)
 add_subdirectory(test_unit)
+
+if(ENABLE_PYTHON_BINDINGS)
+    message(STATUS "Enable Python bindings")
+    add_subdirectory(python)
+endif()
 
 if(ENABLE_TOY_BENCHMARKS)
     message(STATUS "Enable Toy benchmarks")

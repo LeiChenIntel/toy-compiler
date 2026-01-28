@@ -14,6 +14,27 @@ reconstruction:
   the project structure much clearer and easier for further extension.
 * .gitignore and .clang-format are added to make the Toy from the tutorial to a real project.
 
+## Toy Language
+
+The Toy language is a simple interface to create Toy IR using Python. Developers will not step into C++ code or 
+write a Toy IR manually.
+
+Here is an example. Create a Toy ConstantOp in the module.
+```python
+constant_op1 = toy_d.ConstantOp(
+    result=RankedTensorType.get([6], F64Type.get()),
+    value=DenseElementsAttr.get_splat(
+        RankedTensorType.get([6], F64Type.get()),
+        FloatAttr.get(F64Type.get(), 1.0)))
+```
+Then the module can be dumped as
+```text
+module {
+  %0 = toy.constant {value = dense<1.000000e+00> : tensor<6xf64>} : tensor<6xf64>
+}
+```
+More details can be found on page [Python Binding](docs/python-binding.md).
+
 ## Getting Started with the Toy Compiler
 
 ### How to build the project
@@ -21,7 +42,7 @@ reconstruction:
 Clone the project.
 
 ```bash
-git clone https://github.com/LeiChenIntel/toy-compiler.git
+git clone https://github.com/LeiChenIntel/mlir-toy-compiler.git
 ```
 
 Move to Toy Compiler based directory and update submodule. Now the project depends on GoogleTest.
