@@ -21,7 +21,7 @@ endif()
 # Need OpenBLAS library for matrix multiplication benchmarks!
 option(ENABLE_MATMUL_BENCHMARKS "" OFF)
 # Recommend to set up virtual environment for Python bindings
-option(ENABLE_PYTHON_BINDINGS "" ON)
+option(ENABLE_PYTHON_BINDINGS "" OFF)
 
 # Use /MD instead of /MT in googletest
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
